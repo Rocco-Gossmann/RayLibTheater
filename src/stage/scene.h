@@ -4,26 +4,26 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-typedef void GenericSceneFunction(void);
-typedef bool SceneTickFunction(void);
-typedef void* SceneUnloadFunction(void);
+#include "play.h"
+#include "entity.h"
 
-typedef struct{
-    GenericSceneFunction *OnLoad;
-    SceneTickFunction *OnTick;
-    GenericSceneFunction *OnStageDraw;
-    GenericSceneFunction *OnWindowDraw;
-    SceneUnloadFunction *OnUnload;
-} Scene;
+namespace Stage {
 
+    class Scene : public Entity {
+    public:
 
-Scene* NewScene(
-    GenericSceneFunction *OnLoad
-,    SceneTickFunction *OnTick
-,    GenericSceneFunction *OnStageDraw
-,    GenericSceneFunction *OnWindowDraw
-,    SceneUnloadFunction *OnUnload
-);
-void DestroyScene(Scene *s);
+        Scene();
+
+        virtual void OnLoad(Play);
+        virtual Scene* OnUnload(Play);
+        virtual void OnStageDraw(Play);
+        virtual void OnWindowDraw(Play);
+
+        virtual bool OnTick(Play);
+
+        virtual void OnStageRemove(Play);
+    };
+
+}
 
 #endif 

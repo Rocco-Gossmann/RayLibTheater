@@ -1,10 +1,10 @@
-CC := zig cc
+CC := zig c++
 TARGET := RayWrapC.run
 DIRSRC:=./src
 DIRBUILD:=./build
 
-CSOURCE:=$(shell find $(DIRSRC) -name "*.c")
-OBJSRC:=$(patsubst $(DIRSRC)/%.c, $(DIRBUILD)/%.o, $(CSOURCE))
+CSOURCE:=$(shell find $(DIRSRC) -name "*.cpp")
+OBJSRC:=$(patsubst $(DIRSRC)/%.cpp, $(DIRBUILD)/%.o, $(CSOURCE))
 
 RAYFLAGS:=$(shell pkg-config --libs --cflags raylib)
 
@@ -15,7 +15,7 @@ $(TARGET): $(OBJSRC)
 	$(CC) $(RAYFLAGS) -o $@ $(OBJSRC)
 
 
-$(DIRBUILD)/%.o: $(DIRSRC)/%.c
+$(DIRBUILD)/%.o: $(DIRSRC)/%.cpp
 	mkdir -p $(dir $@)
 	$(CC) -g -c $(RAYFLAGS) -o $@ $<
 
