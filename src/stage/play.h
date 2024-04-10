@@ -3,9 +3,12 @@
 
 namespace Stage  {
 
-    typedef struct {
-        float deltaTime;
-    } Play;
+class Stage;
+
+typedef struct {
+    float deltaTime;
+    Stage* stage;
+} Play;
 
 }
 

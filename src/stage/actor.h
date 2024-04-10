@@ -1,5 +1,5 @@
-#ifndef INTERFACE_H 
-#define INTERFACE_H 1
+#ifndef STAGE_ACTOR_H 
+#define STAGE_ACTOR_H 1
 
 #include <unordered_set>
 #include <stdbool.h>
@@ -7,18 +7,16 @@
 
 namespace Stage {
 
-class Entity {
+class Actor {
     friend class Stage;
 
 
 public:
-   
-    Entity();
 
     enum Attributes {
         #define ENTITY_ATTRIBUTE(name) name,
-        ENTITY_ATTRIBUTE(DEAD)
         #include "../EntityAttributes.hpp"
+        #include "internal_attribute_list.hpp"
     };
 
     virtual bool OnTick(Play);
@@ -37,4 +35,4 @@ private:
 
 }
 
-#endif // INTERFACE_H
+#endif // STAGE_ACTOR_H

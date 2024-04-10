@@ -1,8 +1,11 @@
 #ifndef ENTITY_ATTRIBUTE 
-// To keep the Compiler happy
 #define ENTITY_ATTRIBUTE(name) /* NOP */
 #endif
 
+/* Define your Attributes here:
+ * !!! NAMING must follow the Variale name rules !!!
+//============================================================================*/
 
-#undef ENTITY_ATTRIBUTE
+ENTITY_ATTRIBUTE(EXAMPLE_ATTRIBUTE)
+
 

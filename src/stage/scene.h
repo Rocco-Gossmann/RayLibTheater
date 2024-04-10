@@ -3,25 +3,22 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
-
 #include "play.h"
-#include "entity.h"
+#include "actor.h"
+
 
 namespace Stage {
 
-    class Scene : public Entity {
+    class Scene : public Actor {
     public:
-
-        Scene();
 
         virtual void OnLoad(Play);
         virtual Scene* OnUnload(Play);
         virtual void OnStageDraw(Play);
         virtual void OnWindowDraw(Play);
 
-        virtual bool OnTick(Play);
-
-        virtual void OnStageRemove(Play);
+        virtual bool OnTick(Play) override;
+        virtual void OnStageRemove(Play) override;
     };
 
 }

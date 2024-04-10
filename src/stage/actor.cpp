@@ -1,15 +1,16 @@
-#include "entity.h"
+#include "actor.h"
 
 
 namespace Stage {
 
-Entity::Entity() {}
+bool Actor::OnTick(Play) { return false; }
+void Actor::OnStageRemove(Play) {}
 
-void Entity::addAttribute(Attributes a) {
+void Actor::addAttribute(Attributes a) {
     _attributes.insert(a);
 }
 
-void Entity::removeAttribute(Attributes a) {
+void Actor::removeAttribute(Attributes a) {
     auto attr = this->_attributes.find(a);  
 
     if(attr != _attributes.end()) {
@@ -17,7 +18,7 @@ void Entity::removeAttribute(Attributes a) {
     }
 }
 
-bool Entity::hasAttribute(Attributes a) {
+bool Actor::hasAttribute(Attributes a) {
     return _attributes.find(a) != _attributes.end();
 }
 
