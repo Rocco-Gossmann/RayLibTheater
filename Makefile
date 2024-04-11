@@ -6,7 +6,7 @@ DIRBUILD:=./build
 CSOURCE:=$(shell find $(DIRSRC) -name "*.cpp")
 OBJSRC:=$(patsubst $(DIRSRC)/%.cpp, $(DIRBUILD)/%.o, $(CSOURCE))
 
-RAYFLAGS:=$(shell pkg-config --libs --cflags raylib)
+RAYFLAGS:=$(shell pkg-config --libs --cflags raylib) -I./src
 
 debug.run: $(OBJSRC)
 	$(CC) -g $(RAYFLAGS) -o $@ $(OBJSRC)
@@ -25,7 +25,7 @@ run: $(TARGET)
 .phony: dev clean
 
 dev:
-	find . -name "*.c" -o -name "*.h" | entr make debug.run 
+	find . -name "*.cpp" -o -name "*.h" | entr make debug.run 
 
 clean:
 	$(shell rm -rf $(DIRBUILD))

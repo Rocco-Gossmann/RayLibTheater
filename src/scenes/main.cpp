@@ -11,8 +11,8 @@ void MainScene::OnStageDraw(Stage::Play p) {
 Stage::Scene* MainScene::OnUnload(Stage::Play p) {
     std::cout << "Scene unload" << std::endl;
 
-    p.stage->RemoveActorAttribute(&theDebug, Actor::TICKING);
-    theDebugsSpot.Drop();
+    p.stage->MakeActorInvisible(&theDebug);
+    p.stage->RemoveActorAttribute(&theDebug, Stage::TICKING);
 
     return NULL;
 }
@@ -22,8 +22,8 @@ void MainScene::OnLoad(Stage::Play p) {
     p.stage->BorderColor(RED);
 
 
-    p.stage->AddActorAttribute(&theDebug, Stage::Actor::TICKING);
-    theDebugsSpot = p.stage->MakeActorVisible(&theDebug);
+    p.stage->AddActorAttribute(&theDebug, Stage::TICKING);
+    p.stage->MakeActorVisible(&theDebug);
 
 }
 

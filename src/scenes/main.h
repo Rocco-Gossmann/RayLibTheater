@@ -1,7 +1,8 @@
 #ifndef SCENES_MAIN
 #define SCENES_MAIN 1
 
-#include "../stage/theater.h"
+#include "lib/RayTheater.hpp"
+
 #include "../actors/debug.h"
 
 namespace Scenes {
@@ -9,13 +10,12 @@ namespace Scenes {
 class MainScene : public Stage::Scene {
 
 public:
-    void OnStageDraw(Stage::Play) override;
-    Stage::Scene *OnUnload(Stage::Play) override;
-    void OnLoad(Stage::Play) override;
+    void OnStageDraw(Stage::Play);
+    Stage::Scene *OnUnload(Stage::Play);
+    void OnLoad(Stage::Play);
 
 private:
     Actors::Debug theDebug;
-    Stage::Core::DoubleLinkedList<Actor> theDebugsSpot;
 
 };
 } // namespace Scenes

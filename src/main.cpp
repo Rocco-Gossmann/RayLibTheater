@@ -1,4 +1,6 @@
-#include "./stage/theater.h"
+#define RAYTHEATER_MAIN 
+#include "./lib/RayTheater.hpp"
+
 #include "./scenes/main.h"
 
 

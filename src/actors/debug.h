@@ -2,7 +2,8 @@
 #ifndef ACTOR_DEBUG_H 
 #define ACTOR_DEBUG_H 1
 
-#include "../stage/theater.h"
+#include "lib/RayTheater.hpp"
+
 
 namespace Actors {
 
