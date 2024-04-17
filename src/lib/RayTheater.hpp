@@ -1,9 +1,11 @@
 #ifndef RAYTHEATER_H
-#define RAYTHEATER_H 1
+#define RAYTHEATER_H
 
-#include <raylib.h>
+#include <cstdio>
 #include <unordered_map>
 #include <unordered_set>
+
+#include <raylib.h>
 
 namespace StageHelpers {
 
@@ -134,11 +136,13 @@ private:
 
   std::unordered_set<T *> *_content;
 };
+
 } // namespace StageHelpers
 
 namespace Stage {
 
 class Stage; // <== "needed by some clases before Stage is defined
+class TransformComponent;
 
 //=============================================================================
 // Stage::Attributes
@@ -151,6 +155,8 @@ enum Attributes {
 #endif // __has_include("RayTheaterAttributes.hpp")
 
   STAGE_ATTRIBUTE(TICKING) STAGE_ATTRIBUTE(DEAD)
+
+      __STAGE_ATTRIBUTE_COUNT
 #undef STAGE_ATTRIBUTE
 };
 
@@ -164,6 +170,34 @@ typedef struct {
 } Play;
 
 //=============================================================================
+// Actor::Components
+//=============================================================================
+class ActorComponent {
+public:
+  virtual ActorComponent *getState();
+  virtual void FlipStates(void *);
+};
+
+class Transform2D : ActorComponent {
+
+public:
+  int x = 0;
+  int y = 0;
+
+  ActorComponent *getState() {
+    auto cln = new Transform2D();
+    cln->x = this->x;
+    cln->y = this->y;
+    return (ActorComponent *)cln;
+  }
+
+  void FlipStates(void *c) {
+    this->x = ((Transform2D *)c)->x;
+    this->y = ((Transform2D *)c)->y;
+  }
+};
+
+//=============================================================================
 // Stage::Actor
 //=============================================================================
 /**
@@ -173,16 +207,17 @@ typedef struct {
  */
 class Actor {
   friend class Stage;
+  friend class TransformComponent;
 
 public:
-  virtual bool OnTick(Play);
-  virtual void OnStageRemove(Play);
-
+  Actor();
   bool hasAttribute(Attributes attr);
+
+protected:
+  virtual void OnTick(Play);
 
 private:
   std::unordered_set<Attributes> _attributes;
-
   void addAttribute(Attributes a);
   void removeAttribute(Attributes a);
 };
@@ -190,15 +225,14 @@ private:
 //=============================================================================
 // Stage::Scene
 //=============================================================================
-class Scene : public Actor {
+class Scene {
 public:
   virtual void OnLoad(Play);
   virtual Scene *OnUnload(Play);
   virtual void OnStageDraw(Play);
   virtual void OnWindowDraw(Play);
 
-  virtual bool OnTick(Play) override;
-  virtual void OnStageRemove(Play) override;
+  virtual bool OnTick(Play);
 };
 
 //=============================================================================
@@ -219,7 +253,7 @@ public:
    * TICKING => The Actors OnTick method will be invoked each frame
    * DEAD => Actor Will be removed from all Groups before next Draw
    *
-   * give an Actor the DEAD Attribute to remove it from all lists
+   * give an Actor the DEAD Attribute to remove it from the Stage
    *
    * You can also add other Attributes via the "EntityAttributes.hpp"
    */
@@ -287,10 +321,25 @@ private:
   Stage _stage;
 };
 
+//=============================================================================
+// Stage::State::Transform2D
+//=============================================================================
+namespace State {
+typedef struct {
+  const Vector2 location;
+} Transform2D;
+} // namespace State
+
+typedef struct {
+  const State::Transform2D transform;
+  const bool attributes[__STAGE_ATTRIBUTE_COUNT];
+} ActorState;
+
 //==============================================================================
 // Implementations
 //==============================================================================
 #ifdef RAYTHEATER_MAIN
+#undef RAYTHEATER_MAIN
 
 // Builder Implementation
 //------------------------------------------------------------------------------
@@ -322,12 +371,12 @@ inline void Scene::OnStageDraw(Play) {}
 inline void Scene::OnWindowDraw(Play) {}
 
 inline bool Scene::OnTick(Play) { return false; }
-inline void Scene::OnStageRemove(Play) {}
 
 // Default Actor Implementation
 //------------------------------------------------------------------------------
-inline bool Actor::OnTick(Play) { return false; }
-inline void Actor::OnStageRemove(Play) {}
+inline Actor::Actor() { }
+
+inline void Actor::OnTick(Play) {}
 
 inline void Actor::addAttribute(Attributes a) { _attributes.insert(a); }
 
@@ -345,8 +394,6 @@ inline bool Actor::hasAttribute(Attributes a) {
 
 // Stage Implementation
 //------------------------------------------------------------------------------
-#include <cstdio>
-
 inline Stage::Stage(const int width, const int height, float scale)
     : _scene(0x0), _viewportOrigin({0, 0}),
       _stageRect(
@@ -358,9 +405,8 @@ inline Stage::Stage(const int width, const int height, float scale)
       _borderColor(Color{0x00, 0x88, 0xff, 0xff}),
       _stageTitle("< RayWrapC - Project >") {
 
-#define STAGE_ATTRIBUTE(name)                                                 \
-  _attributelists.insert(                                                      \
-      {name, ::std::unordered_set<Actor *>()});
+#define STAGE_ATTRIBUTE(name)                                                  \
+  _attributelists.insert({name, ::std::unordered_set<Actor *>()});
 #if __has_include("RayTheaterAttributes.h")
 #include "RayTheaterAttributes.h"
 #endif // __has_include("RayTheaterAttributes.hpp")
@@ -392,40 +438,39 @@ inline void Stage::Play(Scene *sc) {
     if (IsWindowResized())
       onResize();
 
-    // TODO: Update delta time in _play;
+    // Put DeltaTime - Multiplyer into context
+    _play.deltaTime = GetFrameTime();
 
-    // Tick all the actors
-    for (auto ticker : _attributelists.at(TICKING)) {
-      if (!ticker->OnTick(_play)) {
-        AddActorAttribute(ticker, DEAD);
-      }
-    }
+    // Remove all Actors, that have been killed in the last cycle.
+    for (auto killed : _attributelists.at(DEAD))
+      RemoveActorFromStage(killed);
 
-    // if the scene is over, switch to the next scene
-    if (_scene->hasAttribute(DEAD)) {
+    // TODO: Cram the current Actors-State somehow into _play;
+
+    // Tick the Scene with the state crated by the last frame.
+    if (!_scene->OnTick(_play)) {
+      // If the scene should end, attempt a scene Switch instead of
+      // continuing.
       switchScene(NULL);
       continue;
-    } else {
-      // Otherwise Remove all who should no longer act in the Scene
-      for (auto killed : _attributelists.at(DEAD)) {
-        RemoveActorFromStage(killed);
-      }
     }
 
+    // Tick all the actors
+    for (auto ticker : _attributelists.at(TICKING))
+      ticker->OnTick(_play);
+
+    // Start drawing on the Stage
     BeginTextureMode(_stage);
     ClearBackground(_backgroundColor);
     _scene->OnStageDraw(_play);
     EndTextureMode();
 
+    // Start drawing on the Stage
     BeginDrawing();
-
     ClearBackground(_borderColor);
-
     DrawTexturePro(_stage.texture, _stageRect, _viewportRect, _viewportOrigin,
                    0, WHITE);
-
     _scene->OnWindowDraw(_play);
-
     EndDrawing();
   }
 
@@ -435,7 +480,6 @@ inline void Stage::Play(Scene *sc) {
 
 inline void Stage::switchScene(Scene *sc) {
   if (_scene != NULL) {
-    RemoveActorFromStage(_scene);
 
     if (sc == NULL)
       sc = _scene->OnUnload(_play);
@@ -448,8 +492,6 @@ inline void Stage::switchScene(Scene *sc) {
   if (sc != NULL) {
     sc->OnLoad(_play);
     _scene = sc;
-    RemoveActorAttribute(_scene, DEAD);
-    AddActorAttribute(_scene, TICKING);
   }
 }
 
@@ -497,8 +539,8 @@ inline void Stage::RemoveActorFromStage(Actor *a) {
 #if __has_include("RayTheaterAttributes.h")
 #include "RayTheaterAttributes.h"
 #endif // __has_include("RayTheaterAttributes.hpp")
-  STAGE_ATTRIBUTE(TICKING) 
-    STAGE_ATTRIBUTE(DEAD)
+  STAGE_ATTRIBUTE(TICKING)
+  STAGE_ATTRIBUTE(DEAD)
 #undef STAGE_ATTRIBUTE
 }
 

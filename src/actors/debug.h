@@ -1,19 +1,14 @@
+#ifndef ACTORS_DEBUG_H 
+#define ACTORS_DEBUG_H 1
 
-#ifndef ACTOR_DEBUG_H 
-#define ACTOR_DEBUG_H 1
-
-#include "lib/RayTheater.hpp"
-
+#include "../lib/RayTheater.hpp"
 
 namespace Actors {
 
-class Debug : public Stage::Actor {
-
-    public:
-        bool OnTick(Stage::Play) override;
+class DebugActor : public Stage::Actor {
 
 };
 
 }
 
-#endif // ACTOR_DEBUG_H
+#endif // ACTORS_DEBUG_H
