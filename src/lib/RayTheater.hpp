@@ -1,14 +1,14 @@
-#ifndef RAYTHEATER_H
-#define RAYTHEATER_H
-
 #include <cstdio>
-#include <unordered_map>
+#include <sys/wait.h>
+#include <type_traits>
 #include <unordered_set>
 
 #include <raylib.h>
 
-namespace StageHelpers {
+#ifndef RAYTHEATER_H
+#define RAYTHEATER_H
 
+namespace StageHelpers {
 //=============================================================================
 // Stage::DoubleLinkedList
 //=============================================================================
@@ -142,7 +142,7 @@ private:
 namespace Stage {
 
 class Stage; // <== "needed by some clases before Stage is defined
-class TransformComponent;
+class ActorComponent;
 
 //=============================================================================
 // Stage::Attributes
@@ -150,11 +150,11 @@ class TransformComponent;
 enum Attributes {
 #define STAGE_ATTRIBUTE(name) name,
 
-#if __has_include("RayTheaterAttributes.h")
-#include "RayTheaterAttributes.h"
+#if __has_include("RayTheaterAttributes.hpp")
+#include "RayTheaterAttributes.hpp"
 #endif // __has_include("RayTheaterAttributes.hpp")
 
-  STAGE_ATTRIBUTE(TICKING) STAGE_ATTRIBUTE(DEAD)
+  STAGE_ATTRIBUTE(TICKING) STAGE_ATTRIBUTE(DEAD) STAGE_ATTRIBUTE(TRANSFORMABLE)
 
       __STAGE_ATTRIBUTE_COUNT
 #undef STAGE_ATTRIBUTE
@@ -170,56 +170,62 @@ typedef struct {
 } Play;
 
 //=============================================================================
-// Actor::Components
-//=============================================================================
-class ActorComponent {
-public:
-  virtual ActorComponent *getState();
-  virtual void FlipStates(void *);
-};
-
-class Transform2D : ActorComponent {
-
-public:
-  int x = 0;
-  int y = 0;
-
-  ActorComponent *getState() {
-    auto cln = new Transform2D();
-    cln->x = this->x;
-    cln->y = this->y;
-    return (ActorComponent *)cln;
-  }
-
-  void FlipStates(void *c) {
-    this->x = ((Transform2D *)c)->x;
-    this->y = ((Transform2D *)c)->y;
-  }
-};
-
-//=============================================================================
 // Stage::Actor
 //=============================================================================
-/**
- * @class Actor
- * @brief An Entity, that can act while a Stage::Scene is playing
- * various of its functions get invoced during the play.
- */
 class Actor {
   friend class Stage;
-  friend class TransformComponent;
+  friend ActorComponent;
 
 public:
-  Actor();
-  bool hasAttribute(Attributes attr);
-
-protected:
-  virtual void OnTick(Play);
+  Actor() : _attributes() {}
 
 private:
   std::unordered_set<Attributes> _attributes;
-  void addAttribute(Attributes a);
-  void removeAttribute(Attributes a);
+};
+
+//==============================================================================
+// Stage::ActorCompnent
+//==============================================================================
+class ActorComponent {
+public:
+  ActorComponent(Actor *ac, Attributes at) { ac->_attributes.insert(at); }
+};
+
+//==============================================================================
+// Stage::ActorCompnent Transform2D
+//==============================================================================
+class Transform2D : ActorComponent {
+
+public:
+  Transform2D(Actor *a) : ActorComponent(a, TRANSFORMABLE){};
+  Vector2 getLoc() { return Vector2(loc); }
+
+  void setLoc(Vector2 l) {
+    this->_loc.x = l.x;
+    this->_loc.y = l.y;
+  }
+
+  void FlipStates() {
+    loc.x = _loc.x;
+    loc.y = _loc.y;
+  }
+
+private:
+  // Values, that the Actor is currently at
+  Vector2 loc;
+
+  // Values, that the Actor should be next frame
+  Vector2 _loc;
+};
+
+//==============================================================================
+// Stage::ActorCompnent Ticking
+//==============================================================================
+class Ticking : ActorComponent {
+public:
+  Ticking(Actor *ac) : ActorComponent(ac, TICKING) {}
+  virtual bool OnTick(Play) = 0;
+  int blub = 0;
 };
 
 //=============================================================================
@@ -227,12 +233,12 @@ private:
 //=============================================================================
 class Scene {
 public:
-  virtual void OnLoad(Play);
-  virtual Scene *OnUnload(Play);
-  virtual void OnStageDraw(Play);
-  virtual void OnWindowDraw(Play);
+  virtual void OnLoad(Play) {}
+  virtual Scene *OnUnload(Play) { return NULL; }
+  virtual void OnStageDraw(Play) {}
+  virtual void OnWindowDraw(Play) {}
 
-  virtual bool OnTick(Play);
+  virtual bool OnTick(Play) { return false; }
 };
 
 //=============================================================================
@@ -242,31 +248,37 @@ class Stage {
   friend class Builder;
 
 public:
-  ~Stage();
+  ~Stage() { _scene = NULL; }
 
   Stage BorderColor(Color);
   Stage BackgroundColor(Color);
 
-  /**
-   * @brief Adds an actor to a group with a given Attribute
-   *
-   * TICKING => The Actors OnTick method will be invoked each frame
-   * DEAD => Actor Will be removed from all Groups before next Draw
-   *
-   * give an Actor the DEAD Attribute to remove it from the Stage
-   *
-   * You can also add other Attributes via the "EntityAttributes.hpp"
-   */
-  void AddActorAttribute(Actor *, Attributes);
+  template <typename T> void AddActor(T *a) {
+    static_assert(std::is_base_of<Actor, T>::value,
+                  "Can't add class, that does not inherit from Stage::Actor");
 
-  /**
-   * @brief Removes an Attribute from a given Actor
-   */
-  void RemoveActorAttribute(Actor *, Attributes);
+    for (auto attr : a->_attributes) {
+      switch (attr) {
+      case TICKING:
+        static_assert(std::is_base_of<Ticking, T>::value,
+                      "Warning !!! class that does not inherit from "
+                      "Stage::Ticking has TICKABLE Attribute");
+        _handle_TICKING.insert(a);
+        break;
 
-  void MakeActorVisible(Actor *);
+      case TRANSFORMABLE:
+        static_assert(std::is_base_of<Transform2D, T>::value,
+                      "Warning !!! class that does not inherit from "
+                      "Stage::Transform2D has TRANSFORMABLE Attribute");
+        _handle_TRANSFORMABLE.insert(a);
+        break;
 
-  void MakeActorInvisible(Actor *);
+      default:
+        break;
+      }
+    }
+  }
+  void RemoveActor(Actor *a);
 
 private:
   const char *_stageTitle;
@@ -283,16 +295,46 @@ private:
 
   ::Stage::Play _play;
 
-  std::unordered_map<Attributes, std::unordered_set<Actor *>> _attributelists;
+  std::unordered_set<Ticking *> _handle_TICKING;
+  std::unordered_set<Transform2D *> _handle_TRANSFORMABLE;
+  std::unordered_set<Actor *> _handle_DEAD;
+
+#define STAGE_ATTRIBUTE(name) std::unordered_set<Actor *> _handle_##name;
+#if __has_include("RayTheaterAttributes.hpp")
+#include "RayTheaterAttributes.hpp"
+#endif // __has_include("RayTheaterAttributes.hpp")
+
+#undef STAGE_ATTRIBUTE
 
   StageHelpers::DoubleLinkedList<Actor> _visibleActors;
 
-  Stage(int width, int height, float scale = 1.0);
   void Play(Scene *sc);
 
-  void RemoveActorFromStage(Actor *);
   void switchScene(Scene *);
   void onResize();
+
+  Stage(int width, int height, float scale = 1.0)
+      : _scene(0x0), _viewportOrigin({0, 0}),
+        _stageRect(
+            {0, 0, static_cast<float>(width), static_cast<float>(-height)}),
+        _viewportRect({0, 0, static_cast<float>(width) * scale,
+                       static_cast<float>(height) * scale}),
+        _stageWidth(width), _stageHeight(height), _play({0, NULL}),
+        _backgroundColor(Color{0x00, 0x00, 0xAA, 0xff}),
+        _borderColor(Color{0x00, 0x88, 0xff, 0xff}), _handle_TICKING(),
+        _handle_DEAD(), _handle_TRANSFORMABLE(),
+        _stageTitle("< RayWrapC - Project >") {
+
+#define STAGE_ATTRIBUTE(name) _handle_##name = std::unordered_set<Actor *>();
+#if __has_include("RayTheaterAttributes.hpp")
+#include "RayTheaterAttributes.hpp"
+#endif // __has_include("RayTheaterAttributes.hpp")
+
+#undef STAGE_ATTRIBUTE
+  }
+
+  void ClearActorFromStage(Actor *a);
+  void ClearStage();
 };
 
 //=============================================================================
@@ -308,114 +350,62 @@ public:
    * @param scale  - multiplier by which the window will be scaled (e.g. 2.0 =
    * each pixel of the stage, takes 2 pixels in the Window)
    */
-  Builder(int width, int height, float scale = 1.0);
+  Builder(int width, int height, float scale = 1.0)
+      : _stage(Stage(width, height, scale)) {}
 
-  Builder Title(const char *);
+  /**
+   * @brief Sets the Title for the opened Window
+   *
+   * @param t - title
+   * @return  itself, for easy chaining of setters
+   */
+  Builder Title(const char *t) {
+    _stage._stageTitle = t;
+    return *this;
+  }
 
-  Builder BorderColor(Color);
-  Builder BackgroundColor(Color);
+  /**
+   * @brief changes the color fo the border, that is shown, when
+   * the window is scaled to a different aspect ratio
+   *
+   * @param c  - Raylib Color
+   * @return  itself for easy chaining of setters
+   */
+  Builder BorderColor(Color c) {
+    _stage._borderColor = c;
+    return *this;
+  }
 
-  void Play(Scene *);
+  /**
+   * @brief sets the cleard background-color of the Stage
+   *
+   * @param c - Raylib Color
+   * @return  itself for easy chainging of setters
+   */
+  Builder BackgroundColor(Color c) {
+    _stage._backgroundColor = c;
+    return *this;
+  }
+
+  /**
+   * @brief Opens the window and starts playing the given Scene
+   * @param sc
+   */
+  void Play(Scene *sc) { _stage.Play(sc); }
 
 private:
   Stage _stage;
 };
 
-//=============================================================================
-// Stage::State::Transform2D
-//=============================================================================
-namespace State {
-typedef struct {
-  const Vector2 location;
-} Transform2D;
-} // namespace State
-
-typedef struct {
-  const State::Transform2D transform;
-  const bool attributes[__STAGE_ATTRIBUTE_COUNT];
-} ActorState;
+}; // namespace Stage
 
 //==============================================================================
 // Implementations
 //==============================================================================
-#ifdef RAYTHEATER_MAIN
-#undef RAYTHEATER_MAIN
-
-// Builder Implementation
-//------------------------------------------------------------------------------
-inline Builder::Builder(int width, int height, float scale)
-    : _stage(Stage(width, height, scale)) {}
-
-inline Builder Builder::Title(const char *t) {
-  _stage._stageTitle = t;
-  return *this;
-}
-
-inline Builder Builder::BorderColor(Color c) {
-  _stage._borderColor = c;
-  return *this;
-}
-
-inline Builder Builder::BackgroundColor(Color c) {
-  _stage._backgroundColor = c;
-  return *this;
-}
-
-inline void Builder::Play(Scene *sc) { _stage.Play(sc); }
-
-// Default Scene Implementation
-//------------------------------------------------------------------------------
-inline void Scene::OnLoad(Play) {}
-inline Scene *Scene::OnUnload(Play) { return NULL; }
-inline void Scene::OnStageDraw(Play) {}
-inline void Scene::OnWindowDraw(Play) {}
-
-inline bool Scene::OnTick(Play) { return false; }
-
-// Default Actor Implementation
-//------------------------------------------------------------------------------
-inline Actor::Actor() { }
-
-inline void Actor::OnTick(Play) {}
-
-inline void Actor::addAttribute(Attributes a) { _attributes.insert(a); }
-
-inline void Actor::removeAttribute(Attributes a) {
-  auto attr = this->_attributes.find(a);
-
-  if (attr != _attributes.end()) {
-    _attributes.erase(a);
-  }
-}
-
-inline bool Actor::hasAttribute(Attributes a) {
-  return _attributes.find(a) != _attributes.end();
-}
+namespace Stage {
 
 // Stage Implementation
 //------------------------------------------------------------------------------
-inline Stage::Stage(const int width, const int height, float scale)
-    : _scene(0x0), _viewportOrigin({0, 0}),
-      _stageRect(
-          {0, 0, static_cast<float>(width), static_cast<float>(-height)}),
-      _viewportRect({0, 0, static_cast<float>(width) * scale,
-                     static_cast<float>(height) * scale}),
-      _stageWidth(width), _stageHeight(height), _play({0, NULL}),
-      _backgroundColor(Color{0x00, 0x00, 0xAA, 0xff}),
-      _borderColor(Color{0x00, 0x88, 0xff, 0xff}),
-      _stageTitle("< RayWrapC - Project >") {
-
-#define STAGE_ATTRIBUTE(name)                                                  \
-  _attributelists.insert({name, ::std::unordered_set<Actor *>()});
-#if __has_include("RayTheaterAttributes.h")
-#include "RayTheaterAttributes.h"
-#endif // __has_include("RayTheaterAttributes.hpp")
-  STAGE_ATTRIBUTE(TICKING) STAGE_ATTRIBUTE(DEAD)
-#undef STAGE_ATTRIBUTE
-}
-
-inline Stage::~Stage() { _scene = NULL; }
-
 inline void Stage::Play(Scene *sc) {
 
   SetConfigFlags(FLAG_WINDOW_RESIZABLE);
@@ -441,9 +431,10 @@ inline void Stage::Play(Scene *sc) {
     // Put DeltaTime - Multiplyer into context
     _play.deltaTime = GetFrameTime();
 
+    // TODO: Find a better way todo this
     // Remove all Actors, that have been killed in the last cycle.
-    for (auto killed : _attributelists.at(DEAD))
-      RemoveActorFromStage(killed);
+    //    for (auto killed : _attributelists.at(DEAD))
+    //      RemoveActorFromStage(killed);
 
     // TODO: Cram the current Actors-State somehow into _play;
 
@@ -456,7 +447,7 @@ inline void Stage::Play(Scene *sc) {
     }
 
     // Tick all the actors
-    for (auto ticker : _attributelists.at(TICKING))
+    for (Ticking *ticker : _handle_TICKING)
       ticker->OnTick(_play);
 
     // Start drawing on the Stage
@@ -476,6 +467,7 @@ inline void Stage::Play(Scene *sc) {
 
   switchScene(0);
   UnloadRenderTexture(_stage);
+  ClearStage();
 }
 
 inline void Stage::switchScene(Scene *sc) {
@@ -517,45 +509,53 @@ inline void Stage::onResize() {
   _viewportRect.y = (screenHeight - _viewportRect.height) * 0.5;
 }
 
-inline void Stage::AddActorAttribute(Actor *a, Attributes at) {
-  if (a == NULL || a->hasAttribute(at))
-    return;
-  a->addAttribute(at);
-  _attributelists.at(at).insert(a);
+inline void Stage::RemoveActor(Actor *a) {
+  a->_attributes.insert(DEAD);
+  _handle_DEAD.insert(a);
 }
 
-inline void Stage::RemoveActorAttribute(Actor *a, Attributes at) {
-  a->removeAttribute(at);
+inline void Stage::ClearStage() {
 
-  auto al = _attributelists.at(at);
-  auto ac = al.find(a);
-  if (ac != al.end())
-    al.erase(ac);
-}
-
-inline void Stage::RemoveActorFromStage(Actor *a) {
-
-#define STAGE_ATTRIBUTE(name) RemoveActorAttribute(a, name);
-#if __has_include("RayTheaterAttributes.h")
-#include "RayTheaterAttributes.h"
-#endif // __has_include("RayTheaterAttributes.hpp")
-  STAGE_ATTRIBUTE(TICKING)
+#define STAGE_ATTRIBUTE(name) _handle_ ## name.clear();
   STAGE_ATTRIBUTE(DEAD)
+  STAGE_ATTRIBUTE(TICKING)
+  STAGE_ATTRIBUTE(TRANSFORMABLE)
+
+#if __has_include("RayTheaterAttributes.hpp")
+#include "RayTheaterAttributes.hpp"
+#endif // __has_include("RayTheaterAttributes.hpp")
+
 #undef STAGE_ATTRIBUTE
 }
 
-inline void Stage::MakeActorVisible(Actor *a) {
-  if (_visibleActors.Find(a) == 0)
-    _visibleActors.Push(a);
+inline void Stage::ClearActorFromStage(Actor *a) {
+
+  auto fndTick = _handle_TICKING.find((Ticking *)a);
+  if (fndTick != _handle_TICKING.end()) {
+    _handle_TICKING.erase(fndTick);
+  }
+
+  auto fndTrns2D = _handle_TRANSFORMABLE.find((Transform2D *)a);
+  if (fndTrns2D != _handle_TRANSFORMABLE.end()) {
+    _handle_TRANSFORMABLE.erase(fndTrns2D);
+  }
+
+#define STAGE_ATTRIBUTE(name)                                                  \
+  auto act_##name = _handle_##name.find(a);                                    \
+  if (act_##name != _handle_##name.end()) {                                    \
+    _handle_##name.erase(act_##name);                                          \
+  }
+
+  STAGE_ATTRIBUTE(DEAD)
+
+#if __has_include("RayTheaterAttributes.hpp")
+#include "RayTheaterAttributes.hpp"
+#endif // __has_include("RayTheaterAttributes.hpp")
+
+#undef STAGE_ATTRIBUTE
 }
 
-inline void Stage::MakeActorInvisible(Actor *a) {
-  StageHelpers::DoubleLinkedList<Actor> *lst;
-  while ((lst = _visibleActors.Find(a)) != 0)
-    lst->Drop();
-}
-
-#endif
 
 } // namespace Stage
-#endif // RAYTHEATER_H
+
+#endif

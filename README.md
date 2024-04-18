@@ -28,4 +28,8 @@ The Setup-Process is pretty much inspired by the
 (Always loved how simple it is to integrate into existing projects, so I wanted to mimik that)
 
 # How to use it
+[!todo]
 
+# Advanced Techniques (Pre-Compiler Magic)
+## Custom Attribute-Listes
+[!todo]

@@ -1,4 +1,4 @@
-CC := zig c++
+CC := c++ -std=c++11
 TARGET := RayWrapC.run
 DIRSRC:=./src
 DIRBUILD:=./build
@@ -6,18 +6,19 @@ DIRBUILD:=./build
 CSOURCE:=$(shell find $(DIRSRC) -name "*.cpp")
 OBJSRC:=$(patsubst $(DIRSRC)/%.cpp, $(DIRBUILD)/%.o, $(CSOURCE))
 
-RAYFLAGS:=$(shell pkg-config --libs --cflags raylib) -I./src
+RAYCFLAGS:=$(shell pkg-config --cflags raylib) -I./src
+RAYLFLAGS:=$(shell pkg-config --libs --cflags raylib) -I./src
 
 debug.run: $(OBJSRC)
-	$(CC) -g $(RAYFLAGS) -o $@ $(OBJSRC)
+	$(CC) -g -Wall $(RAYLFLAGS) -o $@ $(OBJSRC)
 
 $(TARGET): $(OBJSRC)
-	$(CC) $(RAYFLAGS) -o $@ $(OBJSRC)
+	$(CC) $(RAYLFLAGS) -o $@ $(OBJSRC)
 
 
 $(DIRBUILD)/%.o: $(DIRSRC)/%.cpp
 	mkdir -p $(dir $@)
-	$(CC) -g -c $(RAYFLAGS) -o $@ $<
+	$(CC) -g -c $(RAYCFLAGS) -o $@ $<
 
 run: $(TARGET)
 	./$<
@@ -29,5 +30,6 @@ dev:
 
 clean:
 	$(shell rm -rf $(DIRBUILD))
-	$(shell rm $(TARGET))
+	$(shell rm -f $(TARGET))
+	$(shell rm -f debug.run)
 
