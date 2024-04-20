@@ -1,3 +1,4 @@
+#include <cmath>
 #include <cstdio>
 #include <sys/wait.h>
 #include <type_traits>
@@ -5,141 +6,15 @@
 
 #include <raylib.h>
 
+// Something to keep .clangd files with the -DSTAGE_ATTRIBUTE from interfering
+#ifdef STAGE_ATTRIBUTE
+#undef STAGE_ATTRIBUTE
+#endif
+
 #ifndef RAYTHEATER_H
 #define RAYTHEATER_H
 
-namespace StageHelpers {
-//=============================================================================
-// Stage::DoubleLinkedList
-//=============================================================================
-template <typename T> class DoubleLinkedList {
-public:
-  DoubleLinkedList<T>(bool isHead = true) : _next(0), _prev(0), _content(0) {
-    _head = this;
-    _tail = this;
-    if (isHead) {
-      _content = new std::unordered_set<T *>();
-    }
-  };
-
-  /**
-   * @brief Add a new Item to list, after this Node
-   *
-   * @param item
-   * @return - the node in the list, that was created
-   */
-  DoubleLinkedList<T> *Append(T *item) {
-    if (item == 0)
-      throw "cant add NULL / 0 / nullptr to a linked list";
-
-    auto node = newNode();
-    node->_item = item;
-
-    // Set new tail, when appending to the last element of the list
-    if (this->_next == 0)
-      this->_head->_tail = node;
-
-    // Connect the new node to the list
-    node->_prev = this;
-    node->_next = this->_next;
-    this->_next = node;
-    this->_content->insert(item);
-
-    return node;
-  }
-
-  /**
-   * @brief Add a new Item to the very end of the List
-   *
-   * @param item
-   * @return - the node in the list, that was created
-   */
-  DoubleLinkedList<T> *Push(T *item) { return this->_tail->Append(item); }
-
-  /**
-   * @brief Add a new Item to list, before this Node
-   *
-   * If this node is the root of a list, the item is added after this node
-   *
-   * @param item
-   * @return - the node in the list, that was created
-   */
-  DoubleLinkedList<T> *Prepend(T *item) {
-    if (item == 0)
-      throw "cant add NULL / 0 / nullptr to a linked list";
-
-    auto node = newNode();
-    node->_item = item;
-
-    // Set new tail, when appending to the last element of the list
-    if (this->_prev == 0) {
-      // Cant prepend the the _head of a list, append to the head instead
-      // (chaning the first elment of the list)
-      return this->Append(item);
-    }
-
-    node->_next = this;
-    node->_prev = this->_prev;
-    this->_prev = node;
-    this->_content->insert(item);
-
-    return node;
-  }
-
-  /**
-   * @brief finds the node of an item after this node.
-   *
-   * @param item - 0 if the item could not be found
-   */
-  DoubleLinkedList<T> *Find(T *item) {
-    if (this->_content->find(item) == this->_content->end())
-      return 0;
-
-    auto node = this->_head;
-    while ((node = node->Next()) != 0) {
-      if (node->_item == item)
-        return node;
-    }
-
-    return 0;
-  }
-
-  DoubleLinkedList<T> *Next() { return _next; }
-
-  void Drop() {
-    if (_tail != 0)
-      throw "can't drop the root of a DoubleLinkedList";
-
-    if (_prev != 0)
-      _prev->_next = this->_next;
-    if (_next != 0)
-      _next->_prev = this->_prev;
-
-    delete (this);
-  };
-
-protected:
-  T *_item;
-  DoubleLinkedList<T> *_next;
-  DoubleLinkedList<T> *_prev;
-  DoubleLinkedList<T> *_head;
-  DoubleLinkedList<T> *_tail;
-
-private:
-  DoubleLinkedList<T> *newNode() {
-    auto node = new DoubleLinkedList<T>(false);
-    node->_head = this->_head;
-    node->_tail = 0; // Only the head can know the Tail
-    node->_content = this->_head->_content;
-    return node;
-  }
-
-  std::unordered_set<T *> *_content;
-};
-
-} // namespace StageHelpers
-
-namespace Stage {
+namespace Theater {
 
 class Stage; // <== "needed by some clases before Stage is defined
 class ActorComponent;
@@ -148,6 +23,10 @@ class ActorComponent;
 // Stage::Attributes
 //=============================================================================
 enum Attributes {
+#ifdef STAGE_ATTRIBUTE
+#undef STAGE_ATTRIBUTE
+#endif
+
 #define STAGE_ATTRIBUTE(name) name,
 
 #if __has_include("RayTheaterAttributes.hpp")
@@ -164,9 +43,12 @@ enum Attributes {
 // Stage::Play
 //=============================================================================
 /** @brief Context provided to each Actor on the Scene */
-typedef struct {
-  float deltaTime;
-  Stage *stage;
+typedef struct Play {
+  float deltaTime = 0.0f;
+  Stage *stage = NULL;
+  Vector2 mouseLoc = {};
+  int mouseX = 0;
+  int mouseY = 0;
 } Play;
 
 //=============================================================================
@@ -197,7 +79,9 @@ public:
 class Transform2D : ActorComponent {
 
 public:
-  Transform2D(Actor *a) : ActorComponent(a, TRANSFORMABLE){};
+  Transform2D(Actor *a)
+      : ActorComponent(a, TRANSFORMABLE), _loc({0.0f, 0.0f}),
+        loc({0.0f, 0.0f}){};
   Vector2 getLoc() { return Vector2(loc); }
 
   void setLoc(Vector2 l) {
@@ -205,7 +89,7 @@ public:
     this->_loc.y = l.y;
   }
 
-  void FlipStates() {
+  void FlipTransform2DStates() {
     loc.x = _loc.x;
     loc.y = _loc.y;
   }
@@ -255,28 +139,13 @@ public:
 
   template <typename T> void AddActor(T *a) {
     static_assert(std::is_base_of<Actor, T>::value,
-                  "Can't add class, that does not inherit from Stage::Actor");
+                  "Can't add class, that does not inherit from Theater::Actor");
 
-    for (auto attr : a->_attributes) {
-      switch (attr) {
-      case TICKING:
-        static_assert(std::is_base_of<Ticking, T>::value,
-                      "Warning !!! class that does not inherit from "
-                      "Stage::Ticking has TICKABLE Attribute");
-        _handle_TICKING.insert(a);
-        break;
+    if (std::is_base_of<Ticking, T>::value)
+      _handle_TICKING.insert((Ticking *)a);
 
-      case TRANSFORMABLE:
-        static_assert(std::is_base_of<Transform2D, T>::value,
-                      "Warning !!! class that does not inherit from "
-                      "Stage::Transform2D has TRANSFORMABLE Attribute");
-        _handle_TRANSFORMABLE.insert(a);
-        break;
-
-      default:
-        break;
-      }
-    }
+    if (std::is_base_of<Transform2D, T>::value)
+      _handle_TRANSFORMABLE.insert((Transform2D *)a);
   }
   void RemoveActor(Actor *a);
 
@@ -284,6 +153,7 @@ private:
   const char *_stageTitle;
   float _stageWidth;
   float _stageHeight;
+  float _stageScale;
   RenderTexture2D _stage;
   Scene *_scene;
   Rectangle _viewportRect;
@@ -293,7 +163,7 @@ private:
   Color _borderColor;
   Color _backgroundColor;
 
-  ::Stage::Play _play;
+  Theater::Play _play;
 
   std::unordered_set<Ticking *> _handle_TICKING;
   std::unordered_set<Transform2D *> _handle_TRANSFORMABLE;
@@ -306,8 +176,6 @@ private:
 
 #undef STAGE_ATTRIBUTE
 
-  StageHelpers::DoubleLinkedList<Actor> _visibleActors;
-
   void Play(Scene *sc);
 
   void switchScene(Scene *);
@@ -319,10 +187,10 @@ private:
             {0, 0, static_cast<float>(width), static_cast<float>(-height)}),
         _viewportRect({0, 0, static_cast<float>(width) * scale,
                        static_cast<float>(height) * scale}),
-        _stageWidth(width), _stageHeight(height), _play({0, NULL}),
+        _stageWidth(width), _stageHeight(height), _play(),
         _backgroundColor(Color{0x00, 0x00, 0xAA, 0xff}),
         _borderColor(Color{0x00, 0x88, 0xff, 0xff}), _handle_TICKING(),
-        _handle_DEAD(), _handle_TRANSFORMABLE(),
+        _handle_DEAD(), _handle_TRANSFORMABLE(), _stageScale(scale),
         _stageTitle("< RayWrapC - Project >") {
 
 #define STAGE_ATTRIBUTE(name) _handle_##name = std::unordered_set<Actor *>();
@@ -397,46 +265,34 @@ private:
   Stage _stage;
 };
 
-}; // namespace Stage
-
 //==============================================================================
-// Implementations
-//==============================================================================
-namespace Stage {
-
 // Stage Implementation
 //------------------------------------------------------------------------------
 inline void Stage::Play(Scene *sc) {
 
+  // Setup the Window
   SetConfigFlags(FLAG_WINDOW_RESIZABLE);
   InitWindow(_viewportRect.width, _viewportRect.height, _stageTitle);
   if (!IsWindowReady()) {
     throw "window not ready";
   }
 
+  // Setup the Render-Area / Stage-Texture
   _stage = LoadRenderTexture(_stageWidth, _stageHeight);
   if (!IsRenderTextureReady(_stage)) {
     CloseWindow();
     throw "failed to create render texture";
   }
 
+  // Prepare the _play - context
+
   _play.stage = this;
+
+  // Activate the given scene
   switchScene(sc);
 
+  // Start the main-Loop
   while (!WindowShouldClose() && _scene != NULL) {
-
-    if (IsWindowResized())
-      onResize();
-
-    // Put DeltaTime - Multiplyer into context
-    _play.deltaTime = GetFrameTime();
-
-    // TODO: Find a better way todo this
-    // Remove all Actors, that have been killed in the last cycle.
-    //    for (auto killed : _attributelists.at(DEAD))
-    //      RemoveActorFromStage(killed);
-
-    // TODO: Cram the current Actors-State somehow into _play;
 
     // Tick the Scene with the state crated by the last frame.
     if (!_scene->OnTick(_play)) {
@@ -445,6 +301,34 @@ inline void Stage::Play(Scene *sc) {
       switchScene(NULL);
       continue;
     }
+
+    // Remove all Actors, that have been killed in the last cycle.
+    for (auto dead : _handle_DEAD)
+      ClearActorFromStage(dead);
+
+    // Flip all the Actors State
+    for (auto act : _handle_TRANSFORMABLE)
+      act->FlipTransform2DStates();
+
+    // React to Window being resized
+    if (IsWindowResized())
+      onResize();
+
+    // Put DeltaTime - Multiplyer into context
+    _play.deltaTime = GetFrameTime();
+
+    // Update MousePosition
+    _play.mouseLoc = Vector2({(float)GetMouseX(), (float)GetMouseY()});
+
+    // TODO: calculate mouse position on stage
+    _play.mouseLoc.x -= _viewportRect.x;
+    _play.mouseLoc.y -= _viewportRect.y;
+
+    _play.mouseLoc.x /= _stageScale;
+    _play.mouseLoc.y /= _stageScale;
+
+    _play.mouseX = std::floor(_play.mouseLoc.x);
+    _play.mouseY = std::floor(_play.mouseLoc.y);
 
     // Tick all the actors
     for (Ticking *ticker : _handle_TICKING)
@@ -503,6 +387,7 @@ inline void Stage::onResize() {
   float scale =
       ::std::min(screenWidth / _stageWidth, screenHeight / _stageHeight);
 
+  _stageScale = scale;
   _viewportRect.width = _stageWidth * scale;
   _viewportRect.height = _stageHeight * scale;
   _viewportRect.x = (screenWidth - _viewportRect.width) * 0.5;
@@ -516,7 +401,7 @@ inline void Stage::RemoveActor(Actor *a) {
 
 inline void Stage::ClearStage() {
 
-#define STAGE_ATTRIBUTE(name) _handle_ ## name.clear();
+#define STAGE_ATTRIBUTE(name) _handle_##name.clear();
   STAGE_ATTRIBUTE(DEAD)
   STAGE_ATTRIBUTE(TICKING)
   STAGE_ATTRIBUTE(TRANSFORMABLE)
@@ -555,7 +440,6 @@ inline void Stage::ClearActorFromStage(Actor *a) {
 #undef STAGE_ATTRIBUTE
 }
 
-
-} // namespace Stage
+} // namespace Theater
 
 #endif

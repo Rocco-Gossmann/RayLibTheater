@@ -9,24 +9,28 @@ OBJSRC:=$(patsubst $(DIRSRC)/%.cpp, $(DIRBUILD)/%.o, $(CSOURCE))
 RAYCFLAGS:=$(shell pkg-config --cflags raylib) -I./src
 RAYLFLAGS:=$(shell pkg-config --libs --cflags raylib) -I./src
 
+DEBUGFLAGS:= -g -Wall -DDEBUG 
 debug.run: $(OBJSRC)
-	$(CC) -g -Wall $(RAYLFLAGS) -o $@ $(OBJSRC)
+	$(CC) $(RAYLFLAGS) $(DEBUGFLAGS) -o $@ $(OBJSRC)
 
-$(TARGET): $(OBJSRC)
+release.run: $(OBJSRC)
 	$(CC) $(RAYLFLAGS) -o $@ $(OBJSRC)
-
 
 $(DIRBUILD)/%.o: $(DIRSRC)/%.cpp
 	mkdir -p $(dir $@)
 	$(CC) -g -c $(RAYCFLAGS) -o $@ $<
 
-run: $(TARGET)
+run: debug.run 
 	./$<
 
-.phony: dev clean
+.phony: dev clean remake
 
 dev:
-	find . -name "*.cpp" -o -name "*.h" | entr make debug.run 
+	find . -name "*.cpp" -o -name "*.h" -o -name "*.hpp" | entr make remake
+
+remake:
+	$(shell rm -rf $(DIRBUILD)/main.o)
+	make debug.run
 
 clean:
 	$(shell rm -rf $(DIRBUILD))
