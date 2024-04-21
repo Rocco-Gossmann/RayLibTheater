@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <sys/wait.h>
 #include <type_traits>
+#include <unordered_map>
 #include <unordered_set>
 
 #include <raylib.h>
@@ -11,12 +12,17 @@
 #undef STAGE_ATTRIBUTE
 #endif
 
+// Defining how many actors can be handled each frame
+#ifndef ACTORLIMIT
+#define ACTORLIMIT 256
+#endif
+
 #ifndef RAYTHEATER_H
 #define RAYTHEATER_H
 
 namespace Theater {
 
-class Stage; // <== "needed by some clases before Stage is defined
+class Stage; // <== "needed by some classes before Stage is defined
 class ActorComponent;
 
 //=============================================================================
@@ -34,9 +40,21 @@ enum Attributes {
 #endif // __has_include("RayTheaterAttributes.hpp")
 
   STAGE_ATTRIBUTE(TICKING) STAGE_ATTRIBUTE(DEAD) STAGE_ATTRIBUTE(TRANSFORMABLE)
+      STAGE_ATTRIBUTE(VISIBLE)
 
-      __STAGE_ATTRIBUTE_COUNT
+          __STAGE_ATTRIBUTE_COUNT
 #undef STAGE_ATTRIBUTE
+};
+
+//==============================================================================
+// RenderList
+//==============================================================================
+template <typename T> struct RenderNode {
+  float index;
+  T *obj;
+  bool alive;
+  RenderNode<T> *next;
+  RenderNode<T> *prev;
 };
 
 //=============================================================================
@@ -69,6 +87,8 @@ private:
 // Stage::ActorCompnent
 //==============================================================================
 class ActorComponent {
+  friend Stage;
+
 public:
   ActorComponent(Actor *ac, Attributes at) { ac->_attributes.insert(at); }
 };
@@ -77,6 +97,7 @@ public:
 // Stage::ActorCompnent Transform2D
 //==============================================================================
 class Transform2D : ActorComponent {
+  friend Stage;
 
 public:
   Transform2D(Actor *a)
@@ -89,27 +110,54 @@ public:
     this->_loc.y = l.y;
   }
 
-  void FlipTransform2DStates() {
-    loc.x = _loc.x;
-    loc.y = _loc.y;
-  }
-
 private:
   // Values, that the Actor is currently at
   Vector2 loc;
 
   // Values, that the Actor should be next frame
   Vector2 _loc;
+
+  void FlipTransform2DStates() {
+    loc.x = _loc.x;
+    loc.y = _loc.y;
+  }
 };
 
 //==============================================================================
 // Stage::ActorCompnent Ticking
 //==============================================================================
 class Ticking : ActorComponent {
+  friend Stage;
+
 public:
   Ticking(Actor *ac) : ActorComponent(ac, TICKING) {}
+
+private:
   virtual bool OnTick(Play) = 0;
-  int blub = 0;
+};
+
+//==============================================================================
+// Stage::ActorCompnent Visible
+//==============================================================================
+class Visible : ActorComponent {
+  friend Stage;
+
+public:
+  Visible(Actor *ac) : ActorComponent(ac, VISIBLE) {}
+  /**
+   * @brief Sets what elements are drawn above which other
+   * actors with higher numbers will be drawn above elements with lower numbers
+   * Should 2 elements have the same number, there draw order
+   * depends on the order, in which they were made visible
+   *
+   * @param layer
+   */
+  void SetRenderLayer(int layer) { this->_zindex = layer; }
+
+private:
+  bool _renderListIndex = -1;
+  bool _zindex = 0;
+  virtual void OnDraw(Play) = 0;
 };
 
 //=============================================================================
@@ -137,19 +185,18 @@ public:
   Stage BorderColor(Color);
   Stage BackgroundColor(Color);
 
-  template <typename T> void AddActor(T *a) {
-    static_assert(std::is_base_of<Actor, T>::value,
-                  "Can't add class, that does not inherit from Theater::Actor");
-
-    if (std::is_base_of<Ticking, T>::value)
-      _handle_TICKING.insert((Ticking *)a);
-
-    if (std::is_base_of<Transform2D, T>::value)
-      _handle_TRANSFORMABLE.insert((Transform2D *)a);
-  }
+  template <typename T> void AddActor(T *a);
   void RemoveActor(Actor *a);
 
+  template <typename T> bool MakeActorVisible(T *);
+  template <typename T> void MakeActorInvisible(T *);
+
 private:
+  Stage(int width, int height, float scale = 1.0);
+
+  RenderNode<Visible> _renderNodes[ACTORLIMIT];
+  unsigned int _renderNodeCnt;
+
   const char *_stageTitle;
   float _stageWidth;
   float _stageHeight;
@@ -173,7 +220,7 @@ private:
 #if __has_include("RayTheaterAttributes.hpp")
 #include "RayTheaterAttributes.hpp"
 #endif // __has_include("RayTheaterAttributes.hpp")
-
+  STAGE_ATTRIBUTE(VISIBLE);
 #undef STAGE_ATTRIBUTE
 
   void Play(Scene *sc);
@@ -181,27 +228,7 @@ private:
   void switchScene(Scene *);
   void onResize();
 
-  Stage(int width, int height, float scale = 1.0)
-      : _scene(0x0), _viewportOrigin({0, 0}),
-        _stageRect(
-            {0, 0, static_cast<float>(width), static_cast<float>(-height)}),
-        _viewportRect({0, 0, static_cast<float>(width) * scale,
-                       static_cast<float>(height) * scale}),
-        _stageWidth(width), _stageHeight(height), _play(),
-        _backgroundColor(Color{0x00, 0x00, 0xAA, 0xff}),
-        _borderColor(Color{0x00, 0x88, 0xff, 0xff}), _handle_TICKING(),
-        _handle_DEAD(), _handle_TRANSFORMABLE(), _stageScale(scale),
-        _stageTitle("< RayWrapC - Project >") {
-
-#define STAGE_ATTRIBUTE(name) _handle_##name = std::unordered_set<Actor *>();
-#if __has_include("RayTheaterAttributes.hpp")
-#include "RayTheaterAttributes.hpp"
-#endif // __has_include("RayTheaterAttributes.hpp")
-
-#undef STAGE_ATTRIBUTE
-  }
-
-  void ClearActorFromStage(Actor *a);
+  template <typename T> void ClearActorFromStage(T *a);
   void ClearStage();
 };
 
@@ -268,6 +295,33 @@ private:
 //==============================================================================
 // Stage Implementation
 //------------------------------------------------------------------------------
+inline Stage::Stage(int width, int height, float scale)
+    : _scene(0x0), _viewportOrigin({0, 0}),
+      _stageRect(
+          {0, 0, static_cast<float>(width), static_cast<float>(-height)}),
+      _viewportRect({0, 0, static_cast<float>(width) * scale,
+                     static_cast<float>(height) * scale}),
+      _stageWidth(width), _stageHeight(height), _play(),
+      _backgroundColor(Color{0x00, 0x00, 0xAA, 0xff}),
+      _borderColor(Color{0x00, 0x88, 0xff, 0xff}), _handle_TICKING(),
+      _handle_DEAD(), _handle_TRANSFORMABLE(), _stageScale(scale),
+      _stageTitle("< RayWrapC - Project >"), _renderNodes() {
+
+  static_assert(ACTORLIMIT > 0, "Set ACTORLIMIT must be bigger than 0");
+
+  // Attributes Initialized
+  //=========================================================================
+#define STAGE_ATTRIBUTE(name) _handle_##name = std::unordered_set<Actor *>();
+#if __has_include("RayTheaterAttributes.hpp")
+#include "RayTheaterAttributes.hpp"
+  STAGE_ATTRIBUTE(VISIBLE);
+#endif // __has_include("RayTheaterAttributes.hpp")
+
+#undef STAGE_ATTRIBUTE
+
+  ClearStage();
+}
+
 inline void Stage::Play(Scene *sc) {
 
   // Setup the Window
@@ -320,7 +374,6 @@ inline void Stage::Play(Scene *sc) {
     // Update MousePosition
     _play.mouseLoc = Vector2({(float)GetMouseX(), (float)GetMouseY()});
 
-    // TODO: calculate mouse position on stage
     _play.mouseLoc.x -= _viewportRect.x;
     _play.mouseLoc.y -= _viewportRect.y;
 
@@ -394,9 +447,104 @@ inline void Stage::onResize() {
   _viewportRect.y = (screenHeight - _viewportRect.height) * 0.5;
 }
 
+template <typename T> inline void Stage::AddActor(T *a) {
+  static_assert(std::is_base_of<Actor, T>::value,
+                "Can't add class, that does not inherit from Theater::Actor");
+
+  if (std::is_base_of<Ticking, T>::value)
+    _handle_TICKING.insert((Ticking *)a);
+
+  if (std::is_base_of<Transform2D, T>::value)
+    _handle_TRANSFORMABLE.insert((Transform2D *)a);
+}
+
 inline void Stage::RemoveActor(Actor *a) {
   a->_attributes.insert(DEAD);
   _handle_DEAD.insert(a);
+}
+
+/**
+ * @brief Activates the Rendinger of the actor on the stage
+ *
+ * @tparam T  - Any Class extending Theater::Actor and Theater::Visible
+ * @param actor - an instance of the A Class extending Theater::Actor and
+ * Theater::Visible
+ * @return true = Actor is now visible ; false = limit of visible actors reached
+ */
+template <typename T> inline bool Stage::MakeActorVisible(T *actor) {
+  // Make sure the given Object supports the right classes
+  static_assert(
+      std::is_base_of<Actor, T>::value,
+      "Can't make a class visible, that does not implement Theater::Actor");
+
+  static_assert(
+      std::is_base_of<Visible, T>::value,
+      "Can't make a class visible, that does not implement Theater::Visible");
+
+  // Should there be no free slots anymore, do nothing and fail
+  if (_renderNodeCnt == ACTORLIMIT)
+    return false;
+
+  // Otherwise set the splot tho the new object
+  _renderNodes[_renderNodeCnt].obj = (Visible *)actor;
+  _renderNodes[_renderNodeCnt].alive = true;
+  _renderNodes[_renderNodeCnt].next = NULL;
+  _renderNodes[_renderNodeCnt].prev = NULL;
+  ((Visible *)actor)->_renderListIndex = _renderNodeCnt;
+  _renderNodeCnt++;
+
+  // Give the Actor the "Visible" Attribute
+  ((Actor *)actor)->_attributes.insert(VISIBLE);
+
+  // Return successfully
+  return true;
+}
+
+/**
+ * @brief Makes sure an actor is no longer visible on stage, but keeps
+ * it on the stage.
+ *
+ * @tparam T  - Any Class extending Theater::Actor and Theater::Visible
+ * @param actor - an instance of the A Class extending Theater::Actor and
+ */
+template <typename T> inline void Stage::MakeActorInvisible(T *actor) {
+  // make sure the given Object has the right Classes
+  static_assert(
+      std::is_base_of<Visible, T>::value,
+      "Can't make a class visible, that does not implement Theater::Visible");
+
+  // If there is no Objects to remove, do nothing
+  if (_renderNodeCnt == 0)
+    return;
+
+  // If there is no Objects to remove, do nothing
+  Visible *vis = (Visible *)actor;
+  if (std::is_base_of<Actor, T>::value) {
+    ((Actor *)actor)->_attributes.erase(VISIBLE);
+  }
+
+  // If the removed element is not the last one.
+  if (vis->_renderListIndex != _renderNodeCnt - 1) {
+    // Move the last elements content to the slot of the element to remove
+    _renderNodes[vis->_renderListIndex].obj = _renderNodes[_renderNodeCnt].obj;
+
+    _renderNodes[vis->_renderListIndex].alive =
+        _renderNodes[_renderNodeCnt].alive;
+    _renderNodes[vis->_renderListIndex].next =
+        _renderNodes[_renderNodeCnt].next;
+    _renderNodes[vis->_renderListIndex].prev =
+        _renderNodes[_renderNodeCnt].prev;
+
+    _renderNodes[vis->_renderListIndex].obj->_renderListIndex =
+        vis->_renderListIndex;
+  }
+
+  // Then remove the last Slot
+  _renderNodeCnt--;
+  _renderNodes[_renderNodeCnt].obj = NULL;
+  _renderNodes[_renderNodeCnt].alive = false;
+  _renderNodes[_renderNodeCnt].next = NULL;
+  _renderNodes[_renderNodeCnt].prev = NULL;
 }
 
 inline void Stage::ClearStage() {
@@ -409,20 +557,42 @@ inline void Stage::ClearStage() {
 #if __has_include("RayTheaterAttributes.hpp")
 #include "RayTheaterAttributes.hpp"
 #endif // __has_include("RayTheaterAttributes.hpp")
-
+  STAGE_ATTRIBUTE(VISIBLE)
 #undef STAGE_ATTRIBUTE
-}
 
-inline void Stage::ClearActorFromStage(Actor *a) {
-
-  auto fndTick = _handle_TICKING.find((Ticking *)a);
-  if (fndTick != _handle_TICKING.end()) {
-    _handle_TICKING.erase(fndTick);
+  for (int a = 0; a < ACTORLIMIT; a++) {
+    _renderNodes[a].obj = NULL;
+    _renderNodes[a].next = NULL;
+    _renderNodes[a].prev = NULL;
+    _renderNodes[a].alive = false;
+    _renderNodes[a].index = 0;
   }
 
-  auto fndTrns2D = _handle_TRANSFORMABLE.find((Transform2D *)a);
-  if (fndTrns2D != _handle_TRANSFORMABLE.end()) {
-    _handle_TRANSFORMABLE.erase(fndTrns2D);
+  _renderNodeCnt = 0;
+}
+
+template <typename T> inline void Stage::ClearActorFromStage(T *a) {
+
+  if (std::is_base_of<Ticking, T>::value) {
+    auto fndTick = _handle_TICKING.find((Ticking *)a);
+    if (fndTick != _handle_TICKING.end()) {
+      _handle_TICKING.erase(fndTick);
+    }
+  }
+
+  if (std::is_base_of<Transform2D, T>::value) {
+    auto fndTrns2D = _handle_TRANSFORMABLE.find((Transform2D *)a);
+    if (fndTrns2D != _handle_TRANSFORMABLE.end()) {
+      _handle_TRANSFORMABLE.erase(fndTrns2D);
+    }
+  }
+
+  if (std::is_base_of<Visible, T>::value) {
+    auto actorVis = a->_attributes.find(VISIBLE);
+    if (actorVis != a->_attributes.end()) {
+      MakeActorInvisible((Visible *)a);
+      int idx = ((Visible *)a)->_renderListIndex;
+    }
   }
 
 #define STAGE_ATTRIBUTE(name)                                                  \
@@ -436,7 +606,7 @@ inline void Stage::ClearActorFromStage(Actor *a) {
 #if __has_include("RayTheaterAttributes.hpp")
 #include "RayTheaterAttributes.hpp"
 #endif // __has_include("RayTheaterAttributes.hpp")
-
+  STAGE_ATTRIBUTE(VISIBLE)
 #undef STAGE_ATTRIBUTE
 }
 

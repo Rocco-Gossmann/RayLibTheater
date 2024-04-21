@@ -7,10 +7,11 @@ using namespace Theater;
 
 namespace Actors {
 
-class Mouse : public Actor, public Ticking, public Transform2D {
+class Mouse : public Actor, public Ticking, public Transform2D, public Visible {
 public:
   Mouse();
   bool OnTick(Play) override;
+  void OnDraw(Play) override;
 };
 
 } // namespace Actors
