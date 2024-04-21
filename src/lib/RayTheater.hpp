@@ -1,8 +1,8 @@
+#include <climits>
 #include <cmath>
 #include <cstdio>
 #include <sys/wait.h>
 #include <type_traits>
-#include <unordered_map>
 #include <unordered_set>
 
 #include <raylib.h>
@@ -50,7 +50,7 @@ enum Attributes {
 // RenderList
 //==============================================================================
 template <typename T> struct RenderNode {
-  float index;
+  int index;
   T *obj;
   bool alive;
   RenderNode<T> *next;
@@ -196,6 +196,7 @@ private:
 
   RenderNode<Visible> _renderNodes[ACTORLIMIT];
   unsigned int _renderNodeCnt;
+  RenderNode<Visible> _renderNodeRoot;
 
   const char *_stageTitle;
   float _stageWidth;
@@ -211,6 +212,8 @@ private:
   Color _backgroundColor;
 
   Theater::Play _play;
+
+  bool _rendering;
 
   std::unordered_set<Ticking *> _handle_TICKING;
   std::unordered_set<Transform2D *> _handle_TRANSFORMABLE;
@@ -305,7 +308,7 @@ inline Stage::Stage(int width, int height, float scale)
       _backgroundColor(Color{0x00, 0x00, 0xAA, 0xff}),
       _borderColor(Color{0x00, 0x88, 0xff, 0xff}), _handle_TICKING(),
       _handle_DEAD(), _handle_TRANSFORMABLE(), _stageScale(scale),
-      _stageTitle("< RayWrapC - Project >"), _renderNodes() {
+      _stageTitle("< RayWrapC - Project >"), _renderNodes(), _rendering(false) {
 
   static_assert(ACTORLIMIT > 0, "Set ACTORLIMIT must be bigger than 0");
 
@@ -320,6 +323,11 @@ inline Stage::Stage(int width, int height, float scale)
 #undef STAGE_ATTRIBUTE
 
   ClearStage();
+  _renderNodeRoot.next = NULL;
+  _renderNodeRoot.prev = NULL;
+  _renderNodeRoot.obj = NULL;
+  _renderNodeRoot.alive = false;
+  _renderNodeRoot.index = INT_MIN;
 }
 
 inline void Stage::Play(Scene *sc) {
@@ -387,9 +395,54 @@ inline void Stage::Play(Scene *sc) {
     for (Ticking *ticker : _handle_TICKING)
       ticker->OnTick(_play);
 
+    // Figure out the Render order of actors;
+    int rnCnt = _renderNodeCnt;
+    RenderNode<Visible> *rn = &_renderNodeRoot;
+    rn->next = NULL;
+    for (int a = 0; a < rnCnt; a++) {
+      auto node = &(_renderNodes[a]);
+
+      if (node->alive == false)
+        continue;
+
+      if (node->index >= rn->index) {
+        while (rn->next != NULL && rn->next->index <= node->index)
+          rn = rn->next;
+
+        node->next = NULL;
+        if (rn->next != NULL) {
+          rn->next->prev = node;
+          node->next = rn->next;
+        }
+
+        rn->next = node;
+        node->prev = rn;
+
+      } else if (node->index < rn->index && rn->prev == NULL) {
+        while (rn->prev != NULL && rn->prev->index > node->index)
+          rn = rn->prev;
+
+        rn->prev->next = node;
+        node->prev = rn->prev;
+        node->next = rn;
+        rn->prev = node;
+      }
+
+      rn = node;
+    }
+
+    _rendering = true;
+
     // Start drawing on the Stage
     BeginTextureMode(_stage);
     ClearBackground(_backgroundColor);
+
+    rn = _renderNodeRoot.next;
+    while (rn != NULL) {
+      rn->obj->OnDraw(_play);
+      rn = rn->next;
+    }
+
     _scene->OnStageDraw(_play);
     EndTextureMode();
 
@@ -400,6 +453,8 @@ inline void Stage::Play(Scene *sc) {
                    0, WHITE);
     _scene->OnWindowDraw(_play);
     EndDrawing();
+
+    _rendering = false;
   }
 
   switchScene(0);
@@ -458,6 +513,11 @@ template <typename T> inline void Stage::AddActor(T *a) {
     _handle_TRANSFORMABLE.insert((Transform2D *)a);
 }
 
+/**
+ * @brief Will remove an Actor from the stage, on the start of the next Cycle
+ *
+ * @param a - the actor to remove
+ */
 inline void Stage::RemoveActor(Actor *a) {
   a->_attributes.insert(DEAD);
   _handle_DEAD.insert(a);
@@ -466,12 +526,18 @@ inline void Stage::RemoveActor(Actor *a) {
 /**
  * @brief Activates the Rendinger of the actor on the stage
  *
+ * Can only execute, when not rendering.
+ *
  * @tparam T  - Any Class extending Theater::Actor and Theater::Visible
  * @param actor - an instance of the A Class extending Theater::Actor and
  * Theater::Visible
- * @return true = Actor is now visible ; false = limit of visible actors reached
+ * @return true = Actor is now visible ; false = limit of visible actors
+ * reached or you tried to change an actors visibility during rendering.
  */
 template <typename T> inline bool Stage::MakeActorVisible(T *actor) {
+  if (this->_rendering)
+    return false;
+
   // Make sure the given Object supports the right classes
   static_assert(
       std::is_base_of<Actor, T>::value,
@@ -504,10 +570,15 @@ template <typename T> inline bool Stage::MakeActorVisible(T *actor) {
  * @brief Makes sure an actor is no longer visible on stage, but keeps
  * it on the stage.
  *
+ * Can only execute, when not rendering.
+ *
  * @tparam T  - Any Class extending Theater::Actor and Theater::Visible
  * @param actor - an instance of the A Class extending Theater::Actor and
  */
 template <typename T> inline void Stage::MakeActorInvisible(T *actor) {
+  if (this->_rendering)
+    return;
+
   // make sure the given Object has the right Classes
   static_assert(
       std::is_base_of<Visible, T>::value,
