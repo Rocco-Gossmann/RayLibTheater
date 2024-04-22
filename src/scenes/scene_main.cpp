@@ -12,7 +12,6 @@ void MainScene::OnLoad(Play p) {
   std::cout << "Scene load" << std::endl;
   p.stage->AddActor(&theDebug);
   p.stage->AddActor(&mousePtr);
-
   p.stage->MakeActorVisible(&mousePtr);
 }
 

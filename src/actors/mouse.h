@@ -2,16 +2,28 @@
 #define MOUSE_H
 
 #include "lib/RayTheater.hpp"
+#include "raylib.h"
 
 using namespace Theater;
 
 namespace Actors {
 
-class Mouse : public Actor, public Ticking, public Transform2D, public Visible {
+class Mouse : public Actor, public Visible {
 public:
   Mouse();
-  bool OnTick(Play) override;
+
+  // Implement Actor
+  //---------------------------------------------------------------------------
+  void OnStageEnter(Play) override;
+  void OnStageLeave(Play) override;
+
+  // Implement Visible
+  //---------------------------------------------------------------------------
   void OnDraw(Play) override;
+
+private:
+  Texture2D gfx;
+  bool cursorVisible;
 };
 
 } // namespace Actors

@@ -62,11 +62,31 @@ template <typename T> struct RenderNode {
 //=============================================================================
 /** @brief Context provided to each Actor on the Scene */
 typedef struct Play {
+  /** @brief can be multiplied with an 'per second' value (like "pixels per
+   * second") to achive framerate independed timing*/
   float deltaTime = 0.0f;
+
+  /** @brief A reference to the stage, that alows interacting with it */
   Stage *stage = NULL;
+
+  /** @brief a more detailed mousepoisition, that includes sub-pixel space
+   * (For resized stages / windows) */
   Vector2 mouseLoc = {};
+
+  /** @brief x-coordinate of the pixel, that the mouse is currently pointing at
+   * at the stage */
   int mouseX = 0;
+
+  /** @brief y-coordinate of the pixel, that the mouse is currently pointing at
+   * at the stage */
   int mouseY = 0;
+
+  /** @brief The available Stage Width in PX */
+  int stageWidth = 0;
+
+  /** @brief The available Stage Height in PX */
+  int stageHeight = 0;
+
 } Play;
 
 //=============================================================================
@@ -78,6 +98,8 @@ class Actor {
 
 public:
   Actor() : _attributes() {}
+  virtual void OnStageEnter(Play) {}
+  virtual void OnStageLeave(Play) {}
 
 private:
   std::unordered_set<Attributes> _attributes;
@@ -215,6 +237,7 @@ private:
 
   bool _rendering;
 
+  std::unordered_set<Actor *> _actorsToClear;
   std::unordered_set<Ticking *> _handle_TICKING;
   std::unordered_set<Transform2D *> _handle_TRANSFORMABLE;
   std::unordered_set<Actor *> _handle_DEAD;
@@ -235,9 +258,10 @@ private:
   void ClearStage();
 };
 
-//=============================================================================
-// Stage::Builder
-//=============================================================================
+/**
+ * @class Builder
+ * @brief meant to provide an easy way to setup a Stage.
+ */
 class Builder {
 public:
   /**
@@ -308,7 +332,8 @@ inline Stage::Stage(int width, int height, float scale)
       _backgroundColor(Color{0x00, 0x00, 0xAA, 0xff}),
       _borderColor(Color{0x00, 0x88, 0xff, 0xff}), _handle_TICKING(),
       _handle_DEAD(), _handle_TRANSFORMABLE(), _stageScale(scale),
-      _stageTitle("< RayWrapC - Project >"), _renderNodes(), _rendering(false) {
+      _actorsToClear(), _stageTitle("< RayWrapC - Project >"), _renderNodes(),
+      _rendering(false) {
 
   static_assert(ACTORLIMIT > 0, "Set ACTORLIMIT must be bigger than 0");
 
@@ -349,6 +374,8 @@ inline void Stage::Play(Scene *sc) {
   // Prepare the _play - context
 
   _play.stage = this;
+  _play.stageWidth = _stageWidth;
+  _play.stageHeight = _stageHeight;
 
   // Activate the given scene
   switchScene(sc);
@@ -458,8 +485,8 @@ inline void Stage::Play(Scene *sc) {
   }
 
   switchScene(0);
-  UnloadRenderTexture(_stage);
   ClearStage();
+  UnloadRenderTexture(_stage);
 }
 
 inline void Stage::switchScene(Scene *sc) {
@@ -505,6 +532,9 @@ inline void Stage::onResize() {
 template <typename T> inline void Stage::AddActor(T *a) {
   static_assert(std::is_base_of<Actor, T>::value,
                 "Can't add class, that does not inherit from Theater::Actor");
+
+  ((Actor *)a)->OnStageEnter(_play);
+  _actorsToClear.insert(a);
 
   if (std::is_base_of<Ticking, T>::value)
     _handle_TICKING.insert((Ticking *)a);
@@ -620,6 +650,11 @@ template <typename T> inline void Stage::MakeActorInvisible(T *actor) {
 
 inline void Stage::ClearStage() {
 
+  for (Actor *a : _actorsToClear)
+    a->OnStageLeave(_play);
+
+  _actorsToClear.clear();
+
 #define STAGE_ATTRIBUTE(name) _handle_##name.clear();
   STAGE_ATTRIBUTE(DEAD)
   STAGE_ATTRIBUTE(TICKING)
@@ -643,6 +678,11 @@ inline void Stage::ClearStage() {
 }
 
 template <typename T> inline void Stage::ClearActorFromStage(T *a) {
+
+  if (std::is_base_of<Actor, T>::value) {
+    ((Actor *)a)->OnStageLeave(_play);
+    _actorsToClear.erase(a);
+  }
 
   if (std::is_base_of<Ticking, T>::value) {
     auto fndTick = _handle_TICKING.find((Ticking *)a);
