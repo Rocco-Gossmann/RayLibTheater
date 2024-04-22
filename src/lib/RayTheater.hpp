@@ -1,6 +1,8 @@
 #include <climits>
 #include <cmath>
 #include <cstdio>
+#include <iostream>
+#include <ostream>
 #include <sys/wait.h>
 #include <type_traits>
 #include <unordered_set>
@@ -98,6 +100,9 @@ class Actor {
 
 public:
   Actor() : _attributes() {}
+  bool hasAttribute(Attributes attr) {
+    return _attributes.find(attr) != _attributes.end();
+  }
   virtual void OnStageEnter(Play) {}
   virtual void OnStageLeave(Play) {}
 
@@ -213,6 +218,9 @@ public:
   template <typename T> bool MakeActorVisible(T *);
   template <typename T> void MakeActorInvisible(T *);
 
+  bool AddActorAttribute(Actor *, Attributes);
+  bool RemoveActorAttribute(Actor *, Attributes);
+
 private:
   Stage(int width, int height, float scale = 1.0);
 
@@ -243,10 +251,10 @@ private:
   std::unordered_set<Actor *> _handle_DEAD;
 
 #define STAGE_ATTRIBUTE(name) std::unordered_set<Actor *> _handle_##name;
+  STAGE_ATTRIBUTE(VISIBLE);
 #if __has_include("RayTheaterAttributes.hpp")
 #include "RayTheaterAttributes.hpp"
 #endif // __has_include("RayTheaterAttributes.hpp")
-  STAGE_ATTRIBUTE(VISIBLE);
 #undef STAGE_ATTRIBUTE
 
   void Play(Scene *sc);
@@ -646,6 +654,95 @@ template <typename T> inline void Stage::MakeActorInvisible(T *actor) {
   _renderNodes[_renderNodeCnt].alive = false;
   _renderNodes[_renderNodeCnt].next = NULL;
   _renderNodes[_renderNodeCnt].prev = NULL;
+}
+
+inline bool Stage::AddActorAttribute(Actor *act, Attributes attr) {
+
+  switch (attr) {
+  case DEAD:
+    std::cout << " Can't assign ActorAttribute 'DEAD' via "
+                 "Stage::AddActorAttribute => use Stage::RemoveActor instead"
+              << std::endl;
+    return false;
+
+  case TICKING:
+    std::cout
+        << " Can't assign Internal Attribute 'TICKING' via AddActorAttribute "
+           "The Actors class must instead inherit from Theater::Ticking"
+        << std::endl;
+    return false;
+
+  case VISIBLE:
+    std::cout
+        << " Can't assign Internal Attribute 'VISIBLE' via AddActorAttribute "
+           "The Actors class must instead inherit from Theater::Visible"
+        << std::endl;
+    return false;
+
+  case TRANSFORMABLE:
+    std::cout
+        << " Can't assign Internal Attribute 'TRANSFORMABLE' via "
+           "AddActorAttribute "
+           "The Actors class must instead inherit from Theater::Transform2D"
+        << std::endl;
+
+    return false;
+
+#define STAGE_ATTRIBUTE(name)                                                  \
+  case name:                                                                   \
+    _handle_##name.insert(act);                                                \
+    act->_attributes.insert(attr);                                             \
+    return true;
+#if __has_include("RayTheaterAttributes.hpp")
+#include "RayTheaterAttributes.hpp"
+#endif // __has_include("RayTheaterAttributes.hpp")
+#undef STAGE_ATTRIBUTE
+
+  default:
+    return false;
+  }
+}
+
+inline bool Stage::RemoveActorAttribute(Actor *act, Attributes attr) {
+
+  switch (attr) {
+  case DEAD:
+    std::cout << " Can't remove ActorAttribute 'DEAD' via "
+                 "Stage::RemoveActorAttribute"
+              << std::endl;
+    return false;
+
+  case TICKING:
+    std::cout << " Can't remove Internal Attribute 'TICKING' via "
+                 "RemoveActorAttribute "
+              << std::endl;
+    return false;
+
+  case VISIBLE:
+    std::cout << " Can't remove Internal Attribute 'VISIBLE' via "
+                 "RemoveActorAttribute "
+              << std::endl;
+    return false;
+
+  case TRANSFORMABLE:
+    std::cout << " Can't remove Internal Attribute 'TRANSFORMABLE' via "
+                 "RemoveActorAttribute "
+              << std::endl;
+    return false;
+
+#define STAGE_ATTRIBUTE(name)                                                  \
+  case name:                                                                   \
+    _handle_##name.erase(act);                                                 \
+    act->_attributes.erase(attr);                                              \
+    return true;
+#if __has_include("RayTheaterAttributes.hpp")
+#include "RayTheaterAttributes.hpp"
+#endif // __has_include("RayTheaterAttributes.hpp")
+#undef STAGE_ATTRIBUTE
+
+  default:
+    return false;
+  }
 }
 
 inline void Stage::ClearStage() {

@@ -27,9 +27,11 @@ void Mouse::OnDraw(Theater::Play p) {
 
 void Mouse::OnStageEnter(Theater::Play p) {
   gfx = LoadTexture("./assets/cursor.png");
+  p.stage->AddActorAttribute(this, MOUSEPTR);
 }
 
 void Mouse::OnStageLeave(Theater::Play p) {
+  p.stage->RemoveActorAttribute(this, MOUSEPTR);
   UnloadTexture(gfx);
   ShowCursor();
 }
