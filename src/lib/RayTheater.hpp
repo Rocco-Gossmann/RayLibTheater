@@ -103,6 +103,8 @@ public:
   bool hasAttribute(Attributes attr) {
     return _attributes.find(attr) != _attributes.end();
   }
+
+private:
   virtual void OnStageEnter(Play) {}
   virtual void OnStageLeave(Play) {}
 
@@ -209,17 +211,76 @@ class Stage {
 public:
   ~Stage() { _scene = NULL; }
 
-  Stage BorderColor(Color);
-  Stage BackgroundColor(Color);
+  /**
+   * @brief Changes the Color of the Border, that is show, when the window is
+   * scaled to an aspect ratio different, than the Stages
+   */
+  void BorderColor(Color);
 
+  /**
+   * @brief Background-Color of the stage. (Each frame, the stage is cleared
+   * to this color.
+   */
+  void BackgroundColor(Color);
+
+  /**
+   * @brief Registers an Actor as being on the stage
+   *
+   * @tparam T any class that implement Theater::Actor
+   * @param a - reference that the Stage will use to adress the Actor
+   */
   template <typename T> void AddActor(T *a);
+
+  /**
+   * @brief Marks any Actor as "DEAD", meaning, it will be removed from the
+   * stage between cycles
+   *
+   * @param a the pointer to the actor to remove (Must be the same value as
+   * given in AddActor)
+   */
   void RemoveActor(Actor *a);
 
+  /**
+   * @brief By default Actors are invisible / Not rendered
+   * use this function to make it visible (Add it to the Stages render-list)
+   *
+   * @tparam T any class that implements Theater::Actor and Theater::Visible
+   * @return true on success ; false == to many Actors are already on stage or
+   * you called this function during rendering
+   */
   template <typename T> bool MakeActorVisible(T *);
+
+  /**
+   * @brief removes any visible Actor from the stages render-list
+   *
+   * @tparam T any class that implements Theater::Visible
+   */
   template <typename T> void MakeActorInvisible(T *);
 
+  /**
+   * @brief Allows for adding custom Attributes to an Actor on the Stage
+   *
+   * @return - true = attribute added; false = Actor not on stage or used
+   * illegal Attribute
+   */
   bool AddActorAttribute(Actor *, Attributes);
+
+  /**
+   * @brief Removes a custom Attribute from an Actor on the Stage
+   *
+   * @return - true = attribute removed; false = Actor not on stage or used
+   illegal
+   * Attribute
+
+   */
   bool RemoveActorAttribute(Actor *, Attributes);
+
+  /**
+   * @brief gets an unordered_set of Actors all having the requested Attributes
+   *
+   * @param attr
+   */
+  std::unordered_set<Actor *> GetActorsWithAttribute(Attributes attr);
 
 private:
   Stage(int width, int height, float scale = 1.0);
@@ -266,6 +327,9 @@ private:
   void ClearStage();
 };
 
+//=============================================================================
+// Stage::Builder
+//=============================================================================
 /**
  * @class Builder
  * @brief meant to provide an easy way to setup a Stage.
@@ -514,15 +578,9 @@ inline void Stage::switchScene(Scene *sc) {
   }
 }
 
-inline Stage Stage::BorderColor(Color c) {
-  _borderColor = c;
-  return *this;
-}
+inline void Stage::BorderColor(Color c) { _borderColor = c; }
 
-inline Stage Stage::BackgroundColor(Color c) {
-  _backgroundColor = c;
-  return *this;
-}
+inline void Stage::BackgroundColor(Color c) { _backgroundColor = c; }
 
 inline void Stage::onResize() {
   float screenWidth = GetScreenWidth();
@@ -541,7 +599,6 @@ template <typename T> inline void Stage::AddActor(T *a) {
   static_assert(std::is_base_of<Actor, T>::value,
                 "Can't add class, that does not inherit from Theater::Actor");
 
-  ((Actor *)a)->OnStageEnter(_play);
   _actorsToClear.insert(a);
 
   if (std::is_base_of<Ticking, T>::value)
@@ -549,6 +606,8 @@ template <typename T> inline void Stage::AddActor(T *a) {
 
   if (std::is_base_of<Transform2D, T>::value)
     _handle_TRANSFORMABLE.insert((Transform2D *)a);
+
+  ((Actor *)a)->OnStageEnter(_play);
 }
 
 /**
@@ -657,6 +716,9 @@ template <typename T> inline void Stage::MakeActorInvisible(T *actor) {
 }
 
 inline bool Stage::AddActorAttribute(Actor *act, Attributes attr) {
+  if (_actorsToClear.find(act) == _actorsToClear.end()) {
+    return false;
+  }
 
   switch (attr) {
   case DEAD:
@@ -704,6 +766,10 @@ inline bool Stage::AddActorAttribute(Actor *act, Attributes attr) {
 }
 
 inline bool Stage::RemoveActorAttribute(Actor *act, Attributes attr) {
+
+  if (_actorsToClear.find(act) == _actorsToClear.end()) {
+    return false;
+  }
 
   switch (attr) {
   case DEAD:
@@ -818,6 +884,27 @@ template <typename T> inline void Stage::ClearActorFromStage(T *a) {
 #undef STAGE_ATTRIBUTE
 }
 
+inline std::unordered_set<Actor *>
+Stage::GetActorsWithAttribute(Attributes attr) {
+  switch (attr) {
+  case TICKING:
+  case TRANSFORMABLE:
+  case VISIBLE:
+  case DEAD:
+    std::cerr << "can't request Actors for Internal Attributes" << std::endl;
+  default:
+    return std::unordered_set<Actor *>();
+
+#define STAGE_ATTRIBUTE(name)                                                  \
+  case name:                                                                   \
+    return _handle_##name;
+
+#if __has_include("RayTheaterAttributes.hpp")
+#include "RayTheaterAttributes.hpp"
+#endif
+#undef STAGE_ATTRIBUTE
+  }
+}
 } // namespace Theater
 
 #endif

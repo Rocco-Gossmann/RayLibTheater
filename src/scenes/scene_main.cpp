@@ -22,6 +22,12 @@ Scene *MainScene::OnUnload(Play p) {
   return NULL;
 }
 
-bool MainScene::OnTick(Play p) { return true; }
+bool MainScene::OnTick(Play p) {
+
+  auto lst = p.stage->GetActorsWithAttribute(MOUSEPTR);
+  auto ptr = *lst.begin();
+
+  return true;
+}
 
 } // namespace Scenes

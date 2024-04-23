@@ -12,18 +12,20 @@ class Mouse : public Actor, public Visible {
 public:
   Mouse();
 
-  // Implement Actor
-  //---------------------------------------------------------------------------
-  void OnStageEnter(Play) override;
-  void OnStageLeave(Play) override;
+private:
+  Texture2D gfx;
+  bool cursorVisible;
 
+public:
   // Implement Visible
   //---------------------------------------------------------------------------
   void OnDraw(Play) override;
 
 private:
-  Texture2D gfx;
-  bool cursorVisible;
+  // Implement Actor
+  //---------------------------------------------------------------------------
+  void OnStageEnter(Play) override;
+  void OnStageLeave(Play) override;
 };
 
 } // namespace Actors
