@@ -9,7 +9,6 @@ namespace Actors {
 Mouse::Mouse() : Actor(), Visible(this), cursorVisible(true){};
 
 void Mouse::OnDraw(Theater::Play p) {
-
   if (p.mouseX > 0 && p.mouseY > 0 && p.mouseX < p.stageWidth &&
       p.mouseY < p.stageHeight) {
 
@@ -28,6 +27,7 @@ void Mouse::OnDraw(Theater::Play p) {
 void Mouse::OnStageEnter(Theater::Play p) {
   gfx = LoadTexture("./assets/cursor.png");
   p.stage->AddActorAttribute(this, MOUSEPTR);
+  p.stage->MakeActorVisible(this);
 }
 
 void Mouse::OnStageLeave(Theater::Play p) {
