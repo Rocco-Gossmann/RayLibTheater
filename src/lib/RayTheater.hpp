@@ -1,6 +1,7 @@
 #include <climits>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <ostream>
 #include <sys/wait.h>
@@ -8,6 +9,7 @@
 #include <unordered_set>
 
 #include <raylib.h>
+#include <vector>
 
 // Something to keep .clangd files with the -DSTAGE_ATTRIBUTE from interfering
 #ifdef STAGE_ATTRIBUTE
@@ -905,6 +907,217 @@ Stage::GetActorsWithAttribute(Attributes attr) {
 #undef STAGE_ATTRIBUTE
   }
 }
-} // namespace Theater
 
+//==============================================================================
+// BM: Collider - Class
+//==============================================================================
+class ColliderPoint;
+class ColliderCircle;
+class ColliderRect;
+class ColliderPolygon;
+
+class Collider {
+  virtual bool isColidingWithPoint(ColliderPoint *) = 0;
+  virtual bool isColidingWidthRect(ColliderRect *) = 0;
+  virtual bool isColidingWidthCircle(ColliderCircle *) = 0;
+  virtual bool isColidingWidthPolygon(ColliderPolygon *) = 0;
+};
+
+//==============================================================================
+// BM: Collider - Point - Class
+//==============================================================================
+class ColliderPoint : public Collider {
+public:
+  bool isColidingWithPoint(ColliderPoint *) override;
+  bool isColidingWidthRect(ColliderRect *) override;
+  bool isColidingWidthCircle(ColliderCircle *) override;
+  bool isColidingWidthPolygon(ColliderPolygon *) = 0;
+
+  virtual Vector2 getPosition() = 0;
+
+}; // namespace Theater
+
+//==============================================================================
+// BM: Collider - Rect - Class
+//==============================================================================
+class ColliderRect : public Collider {
+public:
+  bool isColidingWithPoint(ColliderPoint *) override;
+  bool isColidingWidthRect(ColliderRect *) override;
+  bool isColidingWidthCircle(ColliderCircle *) = 0;
+  bool isColidingWidthPolygon(ColliderPolygon *) = 0;
+
+  bool rectContainsPoint(Rectangle r, Vector2 p);
+
+  virtual Rectangle getRect() = 0;
+
+private:
+  bool rectInRect(Rectangle r1, Rectangle r2);
+
+}; // namespace Theater
+
+//==============================================================================
+// BM: Collider - Circle - Class
+//==============================================================================
+class ColliderCircle : public Collider {
+public:
+  bool isColidingWithPoint(ColliderPoint *) override;
+  bool isColidingWidthRect(ColliderRect *) override;
+  bool isColidingWidthCircle(ColliderCircle *) override;
+  bool isColidingWidthPolygon(ColliderPolygon *) = 0;
+
+  virtual Vector2 getPosition() = 0;
+  virtual float getRadius() = 0;
+
+  bool containsPoint(Vector2 p);
+
+private:
+  bool lineHitsCircle(float cx, float cy, float radius, float x1, float y1,
+                      float x2, float y2);
+
+  bool pointHitsCircle(float cx, float cy, float radius, float px, float py);
+
+  bool circleHitsPolyShape(Vector2 circleOrigin, float circleRadius,
+                           std::vector<Vector2> lst);
+
+}; // namespace Theater
+//==============================================================================
+// BM: Collider - Point - Implementation
+//==============================================================================
+inline bool ColliderPoint::isColidingWithPoint(ColliderPoint *p) {
+  auto p1 = this->getPosition();
+  auto p2 = p->getPosition();
+  return (p1.x == p2.x && p1.y == p2.y);
+}
+
+inline bool ColliderPoint::isColidingWidthRect(ColliderRect *r) {
+  return r->rectContainsPoint(r->getRect(), this->getPosition());
+}
+
+inline bool ColliderPoint::isColidingWidthCircle(ColliderCircle *c) {
+  return c->containsPoint(getPosition());
+}
+
+//==============================================================================
+// BM: Collider - Rect - Implementation
+//==============================================================================
+inline bool ColliderRect::rectContainsPoint(Rectangle r, Vector2 p) {
+  return p.x >= r.x && p.x <= r.x + r.width && p.y >= r.y &&
+         p.y <= r.y + r.height;
+}
+
+inline bool ColliderRect::rectInRect(Rectangle r1, Rectangle r2) {
+
+  bool tlIn = rectContainsPoint(r1, {r2.x, r2.y});
+  bool trIn = rectContainsPoint(r1, {r2.x + r2.width, r2.y});
+  bool blIn = rectContainsPoint(r1, {r2.x, r2.y + r2.height});
+  bool brIn = rectContainsPoint(r1, {r2.x + r2.width, r2.y + r2.height});
+
+  return (tlIn || trIn || blIn || brIn);
+}
+
+inline bool ColliderRect::isColidingWithPoint(ColliderPoint *p) {
+  return this->rectContainsPoint(this->getRect(), p->getPosition());
+}
+
+inline bool ColliderRect::isColidingWidthRect(ColliderRect *r) {
+  auto r1 = this->getRect();
+  auto r2 = r->getRect();
+  return rectInRect(r1, r2) || rectInRect(r2, r2);
+}
+
+//==============================================================================
+// BM: Collider - Circle - Implementation
+//==============================================================================
+inline bool ColliderCircle::pointHitsCircle(float cx, float cy, float rad,
+                                            float px, float py) {
+  auto rad2 = rad * rad;
+  auto dstx1 = abs(cx - px);
+  auto dsty1 = abs(cy - py);
+
+  return dstx1 * dstx1 + dsty1 * dsty1 > rad2;
+}
+
+inline bool ColliderCircle::lineHitsCircle(float cx, float cy, float cr,
+                                           float x1, float y1, float x2,
+                                           float y2) {
+
+  float lineX = x2 - x1; // Get distances of Line Vector
+  float lineY = y2 - y1;
+  float lineL = lineX * lineX + lineY * lineY;
+
+  float circleX = cx - x1; // Get Distances for Circle to Line Vector
+  float circleY = cy - y1;
+
+  // Find Closest normalized point on Line to get from line to Circle Origin
+  float t = fmax(0, fmin(lineL, (lineX * circleX + lineY * circleY))) / lineL;
+
+  // Translate that normalized point back to the point on the Line
+  float offsetX = x1 + ((x2 - x1) * t);
+  float offsetY = y1 + ((y2 - y1) * t);
+
+  // do a simple circle to point collision check with the found point on the
+  // Line
+  return (((cx - offsetX) * (cx - offsetX) + (cy - offsetY) * (cy - offsetY)) <=
+          (cr * cr));
+}
+
+inline bool ColliderCircle::circleHitsPolyShape(Vector2 circleOrigin,
+                                                float circleRadius,
+                                                std::vector<Vector2> lst) {
+  bool hit = false;
+  for (auto a = 0; a < lst.size() - 1; a++) {
+    auto s = lst.at(a);
+    auto e = lst.at(a + 1);
+    hit = hit || this->lineHitsCircle(circleOrigin.x, circleOrigin.y,
+                                      circleRadius, s.x, s.y, e.x, e.y);
+  }
+
+  return hit;
+}
+
+inline bool ColliderCircle::containsPoint(Vector2 p) {
+  auto rad = getRadius();
+  auto rad2 = rad * rad;
+
+  auto pc = getPosition();
+
+  auto dstx1 = abs(pc.x - p.x);
+  auto dsty1 = abs(pc.y - p.y);
+
+  return dstx1 * dstx1 + dsty1 * dsty1 > rad2;
+}
+
+inline bool ColliderCircle::isColidingWithPoint(ColliderPoint *p) {
+  return containsPoint(p->getPosition());
+}
+
+inline bool ColliderCircle::isColidingWidthCircle(ColliderCircle *c) {
+  auto rad = this->getRadius() + c->getRadius();
+  auto rad2 = rad * rad;
+
+  auto p = getPosition();
+  auto pc = c->getPosition();
+
+  auto dstx1 = abs(pc.x - p.x);
+  auto dsty1 = abs(pc.y - p.y);
+
+  return dstx1 * dstx1 + dsty1 * dsty1 > rad2;
+}
+
+inline bool ColliderCircle::isColidingWidthRect(ColliderRect *rc) {
+  auto o = this->getPosition();
+  auto r = rc->getRect();
+  auto rad = this->getRadius();
+
+  return rc->rectContainsPoint(r, o) ||
+         circleHitsPolyShape(o, rad,
+                             {{r.x, r.y},
+                              {r.x + r.width, r.y},
+                              {r.x + r.width, r.y + r.height},
+                              {r.x, r.y + r.height},
+                              {r.x, r.y}});
+}
+
+} // namespace Theater
 #endif
