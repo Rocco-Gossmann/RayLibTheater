@@ -4,7 +4,6 @@ CompileFlags:
     -I., 
     -I/opt/homebrew/Cellar/raylib/5.0/include, 
     -DRAYTHEATER_MAIN=1,
-    -DSTAGE_ATTRIBUTE(name)=/**/
   ]
   Compiler: c++
 

@@ -10,7 +10,7 @@ Attributes can be seen as little "True" "False" Flags, that communicate
 an Actors properties to to any other Actor and the Stage.
 
 An Actors Attributes can only be manipulated through the Stage.
-For example, if the Actor is added to the Stage.
+For example, if the Actor is added to or removed from the Stage.
 
 ```cpp
   bool AddActorAttribute(Actor *, Attributes);
@@ -48,7 +48,8 @@ So we need a custom Attribute.
 So somewhere in your compilers `include path`, put a `RayTheaterAttributes.hpp` into it.
 
 Alternatively add the `-Ipath/to/the/folder/containing/RayTheaterAttributes.hpp` Flag
-to your Compiler arguments.
+to your Compiler arguments. (more details on [RayTheaterAttrivute.hpp](./raytheater_attributes_hpp.md))
+
 
 Now in the `RayTheaterAttributes.hpp` add the following Line.
 ```cpp
@@ -69,6 +70,7 @@ And just to clean up well remove the Attribute, when the Mouse is removed from t
 ```cpp
 void Mouse::OnStageLeave(Theater::Play p) {
   // ...
+
   p.stage->RemoveActorAttribute(this, MOUSEPTR);
 }
 ```
