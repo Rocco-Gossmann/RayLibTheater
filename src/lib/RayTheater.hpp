@@ -187,7 +187,7 @@ public:
 
 private:
   bool _renderListIndex = -1;
-  bool _zindex = 0;
+  int _zindex = 0;
   virtual void OnDraw(Play) = 0;
 };
 
@@ -429,6 +429,9 @@ inline Stage::Stage(int width, int height, float scale)
   _renderNodeRoot.index = INT_MIN;
 }
 
+//==============================================================================
+// BM: Stage - Implementation - Play
+//------------------------------------------------------------------------------
 inline void Stage::Play(Scene *sc) {
 
   // Setup the Window
@@ -502,6 +505,7 @@ inline void Stage::Play(Scene *sc) {
     rn->next = NULL;
     for (int a = 0; a < rnCnt; a++) {
       auto node = &(_renderNodes[a]);
+      node->index = node->obj->_zindex;
 
       if (node->alive == false)
         continue;
@@ -519,7 +523,7 @@ inline void Stage::Play(Scene *sc) {
         rn->next = node;
         node->prev = rn;
 
-      } else if (node->index < rn->index && rn->prev == NULL) {
+      } else if (node->index < rn->index) {
         while (rn->prev != NULL && rn->prev->index > node->index)
           rn = rn->prev;
 
@@ -914,13 +918,11 @@ Stage::GetActorsWithAttribute(Attributes attr) {
 class ColliderPoint;
 class ColliderCircle;
 class ColliderRect;
-class ColliderPolygon;
 
 class Collider {
   virtual bool isColidingWithPoint(ColliderPoint *) = 0;
-  virtual bool isColidingWidthRect(ColliderRect *) = 0;
-  virtual bool isColidingWidthCircle(ColliderCircle *) = 0;
-  virtual bool isColidingWidthPolygon(ColliderPolygon *) = 0;
+  virtual bool isCollidingWithRect(ColliderRect *) = 0;
+  virtual bool isCollidingWithCircle(ColliderCircle *) = 0;
 };
 
 //==============================================================================
@@ -929,9 +931,8 @@ class Collider {
 class ColliderPoint : public Collider {
 public:
   bool isColidingWithPoint(ColliderPoint *) override;
-  bool isColidingWidthRect(ColliderRect *) override;
-  bool isColidingWidthCircle(ColliderCircle *) override;
-  bool isColidingWidthPolygon(ColliderPolygon *) = 0;
+  bool isCollidingWithRect(ColliderRect *) override;
+  bool isCollidingWithCircle(ColliderCircle *) override;
 
   virtual Vector2 getPosition() = 0;
 
@@ -941,15 +942,16 @@ public:
 // BM: Collider - Rect - Class
 //==============================================================================
 class ColliderRect : public Collider {
+  // Virtual methods
+public:
+  virtual Rectangle getRect() = 0;
+
 public:
   bool isColidingWithPoint(ColliderPoint *) override;
-  bool isColidingWidthRect(ColliderRect *) override;
-  bool isColidingWidthCircle(ColliderCircle *) = 0;
-  bool isColidingWidthPolygon(ColliderPolygon *) = 0;
+  bool isCollidingWithRect(ColliderRect *) override;
+  bool isCollidingWithCircle(ColliderCircle *) override;
 
   bool rectContainsPoint(Rectangle r, Vector2 p);
-
-  virtual Rectangle getRect() = 0;
 
 private:
   bool rectInRect(Rectangle r1, Rectangle r2);
@@ -962,9 +964,8 @@ private:
 class ColliderCircle : public Collider {
 public:
   bool isColidingWithPoint(ColliderPoint *) override;
-  bool isColidingWidthRect(ColliderRect *) override;
-  bool isColidingWidthCircle(ColliderCircle *) override;
-  bool isColidingWidthPolygon(ColliderPolygon *) = 0;
+  bool isCollidingWithRect(ColliderRect *) override;
+  bool isCollidingWithCircle(ColliderCircle *) override;
 
   virtual Vector2 getPosition() = 0;
   virtual float getRadius() = 0;
@@ -979,9 +980,9 @@ private:
 
   bool circleHitsPolyShape(Vector2 circleOrigin, float circleRadius,
                            std::vector<Vector2> lst);
+};
 
-}; // namespace Theater
-//==============================================================================
+//=======================================0=======================================
 // BM: Collider - Point - Implementation
 //==============================================================================
 inline bool ColliderPoint::isColidingWithPoint(ColliderPoint *p) {
@@ -990,11 +991,11 @@ inline bool ColliderPoint::isColidingWithPoint(ColliderPoint *p) {
   return (p1.x == p2.x && p1.y == p2.y);
 }
 
-inline bool ColliderPoint::isColidingWidthRect(ColliderRect *r) {
+inline bool ColliderPoint::isCollidingWithRect(ColliderRect *r) {
   return r->rectContainsPoint(r->getRect(), this->getPosition());
 }
 
-inline bool ColliderPoint::isColidingWidthCircle(ColliderCircle *c) {
+inline bool ColliderPoint::isCollidingWithCircle(ColliderCircle *c) {
   return c->containsPoint(getPosition());
 }
 
@@ -1020,7 +1021,11 @@ inline bool ColliderRect::isColidingWithPoint(ColliderPoint *p) {
   return this->rectContainsPoint(this->getRect(), p->getPosition());
 }
 
-inline bool ColliderRect::isColidingWidthRect(ColliderRect *r) {
+inline bool ColliderRect::isCollidingWithCircle(ColliderCircle *c) {
+  return c->isCollidingWithRect(this);
+}
+
+inline bool ColliderRect::isCollidingWithRect(ColliderRect *r) {
   auto r1 = this->getRect();
   auto r2 = r->getRect();
   return rectInRect(r1, r2) || rectInRect(r2, r2);
@@ -1092,7 +1097,7 @@ inline bool ColliderCircle::isColidingWithPoint(ColliderPoint *p) {
   return containsPoint(p->getPosition());
 }
 
-inline bool ColliderCircle::isColidingWidthCircle(ColliderCircle *c) {
+inline bool ColliderCircle::isCollidingWithCircle(ColliderCircle *c) {
   auto rad = this->getRadius() + c->getRadius();
   auto rad2 = rad * rad;
 
@@ -1105,7 +1110,7 @@ inline bool ColliderCircle::isColidingWidthCircle(ColliderCircle *c) {
   return dstx1 * dstx1 + dsty1 * dsty1 > rad2;
 }
 
-inline bool ColliderCircle::isColidingWidthRect(ColliderRect *rc) {
+inline bool ColliderCircle::isCollidingWithRect(ColliderRect *rc) {
   auto o = this->getPosition();
   auto r = rc->getRect();
   auto rad = this->getRadius();
@@ -1119,5 +1124,5 @@ inline bool ColliderCircle::isColidingWidthRect(ColliderRect *rc) {
                               {r.x, r.y}});
 }
 
-} // namespace Theater
+}; // namespace Theater
 #endif

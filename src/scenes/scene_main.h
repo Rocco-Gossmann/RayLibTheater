@@ -3,6 +3,7 @@
 
 #include "lib/RayTheater.hpp"
 
+#include "actors/button.h"
 #include "actors/debug.h"
 #include "actors/mouse.h"
 
@@ -11,10 +12,14 @@ using namespace Theater;
 namespace Scenes {
 
 class MainScene : public Scene {
+public:
+  MainScene();
 
 private:
   Actors::DebugActor theDebug;
   Actors::Mouse mousePtr;
+
+  Actors::Button btn1;
 
   //==============================================================================
   // Implement Stage:Stage:::Scene

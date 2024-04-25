@@ -28,6 +28,7 @@ void Mouse::OnStageEnter(Theater::Play p) {
   gfx = LoadTexture("./assets/cursor.png");
   p.stage->AddActorAttribute(this, MOUSEPTR);
   p.stage->MakeActorVisible(this);
+  this->SetRenderLayer(999);
 }
 
 void Mouse::OnStageLeave(Theater::Play p) {

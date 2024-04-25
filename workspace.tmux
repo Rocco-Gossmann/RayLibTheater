@@ -1,3 +1,3 @@
 #!/bin/bash
 
-tmux-workspace "RayTheater" "editor" -c "nvim && zsh" "make dev && zsh"
+tmux-workspace "RayTheater" "editor" -v -c "make dev && zsh" "nvim && zsh"
