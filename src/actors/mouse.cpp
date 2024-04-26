@@ -1,5 +1,6 @@
 #include "./mouse.h"
 #include "raylib.h"
+#include <climits>
 
 using namespace std;
 using namespace Theater;
@@ -36,7 +37,7 @@ void Mouse::OnDraw(Theater::Play p) {
 void Mouse::OnStageEnter(Theater::Play p) {
   gfx = LoadTexture("./assets/cursor.png");
   p.stage->AddActorAttribute(this, MOUSEPTR);
-  this->SetRenderLayer(999);
+  this->SetRenderLayer(INT_MAX);
   p.stage->MakeActorVisible(this);
 }
 

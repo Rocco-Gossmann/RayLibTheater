@@ -10,17 +10,19 @@ MainScene::MainScene()
         std::cout << " Hit Button (" << e << "): " << id << std::endl;
       }),
       btn1(1, 8, 8, 64, 24), btn2(2, 8 + 68, 8, 64, 24) {
+
   btn1.Label("BTN 1")
-      ->OnHover(&OnButton)
-      ->OnPress(&OnButton)
-      ->OnHold(&OnButton)
-      ->OnRelease(&OnButton);
+      ->OnEvent(&OnButton) // Setting all Event to be Handled by OnButton
+      // Disableing Event-Handling for Hover and Hold Events
+      ->OnHover(NULL)
+      ->LabelOffset(8, 8)
+      ->OnHold(NULL);
 
   btn2.Label("BTN 2")
-      ->OnHover(&OnButton)
-      ->OnPress(&OnButton)
-      ->OnHold(&OnButton)
-      ->OnRelease(&OnButton);
+      ->LabelOffset(8, 8)
+      ->OnEvent(&OnButton)
+      ->OnHover(NULL)
+      ->OnHold(NULL);
 }
 
 //==============================================================================
