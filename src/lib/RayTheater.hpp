@@ -316,6 +316,7 @@ private:
   Theater::Play _play;
 
   bool _rendering;
+  bool _sceneUnloading;
 
   std::unordered_set<Actor *> _actorsToClear;
   std::unordered_set<Ticking *> _handle_TICKING;
@@ -592,6 +593,7 @@ inline void Stage::Play(Scene *sc) {
 
 inline void Stage::switchScene(Scene *sc) {
   if (_scene != NULL) {
+    _sceneUnloading = true;
 
     if (sc == NULL)
       sc = _scene->OnUnload(_play);
@@ -599,6 +601,8 @@ inline void Stage::switchScene(Scene *sc) {
       _scene->OnUnload(_play);
 
     _scene = NULL;
+
+    _sceneUnloading = false;
   }
 
   if (sc != NULL) {
@@ -645,8 +649,12 @@ template <typename T> inline void Stage::AddActor(T *a) {
  * @param a - the actor to remove
  */
 inline void Stage::RemoveActor(Actor *a) {
-  a->_attributes.insert(DEAD);
-  _handle_DEAD.insert(a);
+  if (_sceneUnloading)
+    ClearActorFromStage(a);
+  else {
+    a->_attributes.insert(DEAD);
+    _handle_DEAD.insert(a);
+  }
 }
 
 /**
@@ -720,8 +728,9 @@ template <typename T> inline void Stage::MakeActorInvisible(T *actor) {
     ((Actor *)actor)->_attributes.erase(VISIBLE);
   }
 
+  _renderNodeCnt--;
   // If the removed element is not the last one.
-  if (vis->_renderListIndex != _renderNodeCnt - 1) {
+  if (vis->_renderListIndex != _renderNodeCnt) {
     // Move the last elements content to the slot of the element to remove
     _renderNodes[vis->_renderListIndex].obj = _renderNodes[_renderNodeCnt].obj;
 
@@ -737,7 +746,6 @@ template <typename T> inline void Stage::MakeActorInvisible(T *actor) {
   }
 
   // Then remove the last Slot
-  _renderNodeCnt--;
   _renderNodes[_renderNodeCnt].obj = NULL;
   _renderNodes[_renderNodeCnt].alive = false;
   _renderNodes[_renderNodeCnt].next = NULL;
