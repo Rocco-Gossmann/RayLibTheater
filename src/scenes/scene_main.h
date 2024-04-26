@@ -2,8 +2,8 @@
 #define SCENES_MAIN_H
 
 #include "lib/RayTheater.hpp"
+#include "lib/RayTheaterUI.hpp"
 
-#include "actors/button.h"
 #include "actors/debug.h"
 #include "actors/mouse.h"
 
@@ -16,12 +16,12 @@ public:
   MainScene();
 
 private:
-  Actors::Button::OnClickHandler OnButtonClick;
+  Theater::UI::Button::ButtonEventHandler OnButton;
 
   Actors::DebugActor theDebug;
   Actors::Mouse mousePtr;
-  Actors::Button btn1;
-  Actors::Button btn2;
+  Theater::UI::Button btn1;
+  Theater::UI::Button btn2;
 
   //==============================================================================
   // Implement Stage:Stage:::Scene

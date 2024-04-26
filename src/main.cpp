@@ -1,5 +1,3 @@
-
-#define RAYTHEATER_MAIN 1
 #include "./lib/RayTheater.hpp"
 
 #include "./scenes/scene_main.h"

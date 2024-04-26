@@ -6,11 +6,22 @@ using namespace Theater;
 namespace Scenes {
 
 MainScene::MainScene()
-    : OnButtonClick([](int id, Actors::Button *btn) {
-        std::cout << " Hit Button: " << id << std::endl;
+    : OnButton([](int id, UI::Button::ButtonEvent e, UI::Button *btn) {
+        std::cout << " Hit Button (" << e << "): " << id << std::endl;
       }),
-      btn1(1, 8, 8, 64, 24, &mousePtr, &OnButtonClick),
-      btn2(2, 8 + 68, 8, 64, 24, &mousePtr, &OnButtonClick) {}
+      btn1(1, 8, 8, 64, 24), btn2(2, 8 + 68, 8, 64, 24) {
+  btn1.Label("BTN 1")
+      ->OnHover(&OnButton)
+      ->OnPress(&OnButton)
+      ->OnHold(&OnButton)
+      ->OnRelease(&OnButton);
+
+  btn2.Label("BTN 2")
+      ->OnHover(&OnButton)
+      ->OnPress(&OnButton)
+      ->OnHold(&OnButton)
+      ->OnRelease(&OnButton);
+}
 
 //==============================================================================
 // Implement Theater::Scene
@@ -18,12 +29,8 @@ MainScene::MainScene()
 void MainScene::OnLoad(Play p) {
   std::cout << "Scene load" << std::endl;
   p.stage->AddActor(&mousePtr);
-
   p.stage->AddActor(&btn1);
-  p.stage->MakeActorVisible(&btn1);
-
   p.stage->AddActor(&btn2);
-  p.stage->MakeActorVisible(&btn2);
 }
 
 Scene *MainScene::OnUnload(Play p) {
