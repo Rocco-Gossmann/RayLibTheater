@@ -30,7 +30,7 @@ class Stage; // <== "needed by some classes before Stage is defined
 class ActorComponent;
 
 //=============================================================================
-// Stage::Attributes
+// BM: Stage::Attributes
 //=============================================================================
 enum Attributes {
 #ifdef STAGE_ATTRIBUTE
@@ -920,7 +920,7 @@ class ColliderCircle;
 class ColliderRect;
 
 class Collider {
-  virtual bool isColidingWithPoint(ColliderPoint *) = 0;
+  virtual bool isCollidingWithPoint(ColliderPoint *) = 0;
   virtual bool isCollidingWithRect(ColliderRect *) = 0;
   virtual bool isCollidingWithCircle(ColliderCircle *) = 0;
 };
@@ -930,7 +930,7 @@ class Collider {
 //==============================================================================
 class ColliderPoint : public Collider {
 public:
-  bool isColidingWithPoint(ColliderPoint *) override;
+  bool isCollidingWithPoint(ColliderPoint *) override;
   bool isCollidingWithRect(ColliderRect *) override;
   bool isCollidingWithCircle(ColliderCircle *) override;
 
@@ -947,7 +947,7 @@ public:
   virtual Rectangle getRect() = 0;
 
 public:
-  bool isColidingWithPoint(ColliderPoint *) override;
+  bool isCollidingWithPoint(ColliderPoint *) override;
   bool isCollidingWithRect(ColliderRect *) override;
   bool isCollidingWithCircle(ColliderCircle *) override;
 
@@ -963,7 +963,7 @@ private:
 //==============================================================================
 class ColliderCircle : public Collider {
 public:
-  bool isColidingWithPoint(ColliderPoint *) override;
+  bool isCollidingWithPoint(ColliderPoint *) override;
   bool isCollidingWithRect(ColliderRect *) override;
   bool isCollidingWithCircle(ColliderCircle *) override;
 
@@ -985,7 +985,7 @@ private:
 //=======================================0=======================================
 // BM: Collider - Point - Implementation
 //==============================================================================
-inline bool ColliderPoint::isColidingWithPoint(ColliderPoint *p) {
+inline bool ColliderPoint::isCollidingWithPoint(ColliderPoint *p) {
   auto p1 = this->getPosition();
   auto p2 = p->getPosition();
   return (p1.x == p2.x && p1.y == p2.y);
@@ -1017,7 +1017,7 @@ inline bool ColliderRect::rectInRect(Rectangle r1, Rectangle r2) {
   return (tlIn || trIn || blIn || brIn);
 }
 
-inline bool ColliderRect::isColidingWithPoint(ColliderPoint *p) {
+inline bool ColliderRect::isCollidingWithPoint(ColliderPoint *p) {
   return this->rectContainsPoint(this->getRect(), p->getPosition());
 }
 
@@ -1093,7 +1093,7 @@ inline bool ColliderCircle::containsPoint(Vector2 p) {
   return dstx1 * dstx1 + dsty1 * dsty1 > rad2;
 }
 
-inline bool ColliderCircle::isColidingWithPoint(ColliderPoint *p) {
+inline bool ColliderCircle::isCollidingWithPoint(ColliderPoint *p) {
   return containsPoint(p->getPosition());
 }
 
