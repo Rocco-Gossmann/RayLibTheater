@@ -16,10 +16,12 @@ public:
   MainScene();
 
 private:
+  Actors::Button::OnClickHandler OnButtonClick;
+
   Actors::DebugActor theDebug;
   Actors::Mouse mousePtr;
-
   Actors::Button btn1;
+  Actors::Button btn2;
 
   //==============================================================================
   // Implement Stage:Stage:::Scene

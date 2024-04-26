@@ -8,20 +8,30 @@ using namespace Theater;
 
 namespace Actors {
 
-class Mouse : public Actor, public Visible {
+class Mouse : public Actor,
+              public Ticking,
+              public Visible,
+              public ColliderPoint {
 public:
   Mouse();
+  Vector2 getPosition() override;
+  bool clicked();
 
 private:
   Texture2D gfx;
   bool cursorVisible;
+  Vector2 _pos;
+  bool _clicked;
 
-public:
+private:
   // Implement Visible
   //---------------------------------------------------------------------------
   void OnDraw(Play) override;
 
-private:
+  // Implement Ticking
+  //---------------------------------------------------------------------------
+  bool OnTick(Play) override;
+
   // Implement Actor
   //---------------------------------------------------------------------------
   void OnStageEnter(Play) override;

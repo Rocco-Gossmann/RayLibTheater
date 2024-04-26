@@ -6,17 +6,26 @@ using namespace Theater;
 
 namespace Actors {
 
-Mouse::Mouse() : Actor(), Visible(this), cursorVisible(true){};
+Mouse::Mouse() : Actor(), Ticking(this), Visible(this), cursorVisible(true){};
+
+bool Mouse::OnTick(Play p) {
+  _pos.x = p.mouseX;
+  _pos.y = p.mouseY;
+  _clicked = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
+
+  return true;
+}
 
 void Mouse::OnDraw(Theater::Play p) {
-  if (p.mouseX > 0 && p.mouseY > 0 && p.mouseX < p.stageWidth &&
-      p.mouseY < p.stageHeight) {
+
+  if (_pos.x > 0 && _pos.y > 0 && _pos.x < p.stageWidth &&
+      _pos.y < p.stageHeight) {
 
     if (cursorVisible) {
       HideCursor();
       cursorVisible = false;
     }
-    DrawTexture(gfx, p.mouseX, p.mouseY, WHITE);
+    DrawTexture(gfx, _pos.x, _pos.y, WHITE);
 
   } else if (!cursorVisible) {
     ShowCursor();
@@ -27,8 +36,8 @@ void Mouse::OnDraw(Theater::Play p) {
 void Mouse::OnStageEnter(Theater::Play p) {
   gfx = LoadTexture("./assets/cursor.png");
   p.stage->AddActorAttribute(this, MOUSEPTR);
-  p.stage->MakeActorVisible(this);
   this->SetRenderLayer(999);
+  p.stage->MakeActorVisible(this);
 }
 
 void Mouse::OnStageLeave(Theater::Play p) {
@@ -36,5 +45,8 @@ void Mouse::OnStageLeave(Theater::Play p) {
   UnloadTexture(gfx);
   ShowCursor();
 }
+
+Vector2 Mouse::getPosition() { return _pos; }
+bool Mouse::clicked() { return _clicked; }
 
 } // namespace Actors
