@@ -91,6 +91,15 @@ typedef struct Play {
   /** @brief The available Stage Height in PX */
   int stageHeight = 0;
 
+  /** @brief Bitlist of mousebuttons pressed this turn */
+  unsigned char mouseDown;
+
+  /** @brief Bitlist of mousebuttons held this turn */
+  unsigned char mouseHeld;
+
+  /** @brief Bitlist of mousebuttons released this turn */
+  unsigned char mouseUp;
+
 } Play;
 
 //=============================================================================
@@ -186,7 +195,7 @@ public:
   void SetRenderLayer(int layer) { this->_zindex = layer; }
 
 private:
-  bool _renderListIndex = -1;
+  int _renderListIndex = -1;
   int _zindex = 0;
   virtual void OnDraw(Play) = 0;
 };
@@ -494,6 +503,20 @@ inline void Stage::Play(Scene *sc) {
 
     _play.mouseX = std::floor(_play.mouseLoc.x);
     _play.mouseY = std::floor(_play.mouseLoc.y);
+
+    // Update MouseButtons
+    _play.mouseHeld = 0;
+    _play.mouseUp = 0;
+    _play.mouseDown = 0;
+
+    for (unsigned char a = 0; a < 6; a++) {
+      _play.mouseDown |= (IsMouseButtonPressed(a) ? 1 : 0) << a;
+      _play.mouseHeld |= (IsMouseButtonDown(a) ? 1 : 0) << a;
+      _play.mouseUp |= (IsMouseButtonUp(a) ? 1 : 0) << a;
+    }
+
+    // Just in case held and Pressed overlap => remove Pressed from held.
+    _play.mouseHeld &= ~_play.mouseDown;
 
     // Tick all the actors
     for (Ticking *ticker : _handle_TICKING)
@@ -923,6 +946,8 @@ class Collider {
   virtual bool isCollidingWithPoint(ColliderPoint *) = 0;
   virtual bool isCollidingWithRect(ColliderRect *) = 0;
   virtual bool isCollidingWithCircle(ColliderCircle *) = 0;
+
+  virtual bool containsPoint(float x, float y) = 0;
 };
 
 //==============================================================================
@@ -933,6 +958,8 @@ public:
   bool isCollidingWithPoint(ColliderPoint *) override;
   bool isCollidingWithRect(ColliderRect *) override;
   bool isCollidingWithCircle(ColliderCircle *) override;
+
+  bool containsPoint(float x, float y) override;
 
   virtual Vector2 getPosition() = 0;
 
@@ -952,6 +979,7 @@ public:
   bool isCollidingWithCircle(ColliderCircle *) override;
 
   bool rectContainsPoint(Rectangle r, Vector2 p);
+  bool containsPoint(float x, float y) override;
 
 private:
   bool rectInRect(Rectangle r1, Rectangle r2);
@@ -970,6 +998,7 @@ public:
   virtual Vector2 getPosition() = 0;
   virtual float getRadius() = 0;
 
+  bool containsPoint(float x, float y) override;
   bool containsPoint(Vector2 p);
 
 private:
@@ -985,10 +1014,14 @@ private:
 //=======================================0=======================================
 // BM: Collider - Point - Implementation
 //==============================================================================
-inline bool ColliderPoint::isCollidingWithPoint(ColliderPoint *p) {
+inline bool ColliderPoint::containsPoint(float x, float y) {
   auto p1 = this->getPosition();
+  return (p1.x == x && p1.y == y);
+};
+
+inline bool ColliderPoint::isCollidingWithPoint(ColliderPoint *p) {
   auto p2 = p->getPosition();
-  return (p1.x == p2.x && p1.y == p2.y);
+  return containsPoint(p2.x, p2.y);
 }
 
 inline bool ColliderPoint::isCollidingWithRect(ColliderRect *r) {
@@ -1006,6 +1039,11 @@ inline bool ColliderRect::rectContainsPoint(Rectangle r, Vector2 p) {
   return p.x >= r.x && p.x <= r.x + r.width && p.y >= r.y &&
          p.y <= r.y + r.height;
 }
+
+inline bool ColliderRect::containsPoint(float x, float y) {
+  auto r = this->getRect();
+  return x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height;
+};
 
 inline bool ColliderRect::rectInRect(Rectangle r1, Rectangle r2) {
 
@@ -1042,6 +1080,12 @@ inline bool ColliderCircle::pointHitsCircle(float cx, float cy, float rad,
 
   return dstx1 * dstx1 + dsty1 * dsty1 > rad2;
 }
+
+inline bool ColliderCircle::containsPoint(float x, float y) {
+  auto p = this->getPosition();
+  auto r = this->getRadius();
+  return pointHitsCircle(p.x, p.y, r, x, y);
+};
 
 inline bool ColliderCircle::lineHitsCircle(float cx, float cy, float cr,
                                            float x1, float y1, float x2,
