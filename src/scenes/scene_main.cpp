@@ -2,27 +2,14 @@
 #include <iostream>
 
 using namespace Theater;
+using namespace Theater::UI;
 
 namespace Scenes {
 
-MainScene::MainScene()
-    : OnButton([](int id, UI::Button::ButtonEvent e, UI::Button *btn) {
-        std::cout << " Hit Button (" << e << "): " << id << std::endl;
-      }),
-      btn1(1, 8, 8, 64, 24), btn2(2, 8 + 68, 8, 64, 24) {
-
-  btn1.Label("BTN 1")
-      ->OnEvent(&OnButton) // Setting all Event to be Handled by OnButton
-      // Disableing Event-Handling for Hover and Hold Events
-      ->OnHover(NULL)
-      ->LabelOffset(8, 8)
-      ->OnHold(NULL);
-
-  btn2.Label("BTN 2")
-      ->LabelOffset(8, 8)
-      ->OnEvent(&OnButton)
-      ->OnHover(NULL)
-      ->OnHold(NULL);
+MainScene::MainScene() : OnButton(NULL) {
+  OnButton = [](int id, Button::ButtonEvent e, Button *btn) {
+    std::cout << " Hit Button (" << e << "): " << id << std::endl;
+  };
 }
 
 //==============================================================================
@@ -31,14 +18,31 @@ MainScene::MainScene()
 void MainScene::OnLoad(Play p) {
   std::cout << "Scene load" << std::endl;
   p.stage->AddActor(&mousePtr);
-  p.stage->AddActor(&btn1);
-  p.stage->AddActor(&btn2);
+
+  for (int a = 0; a < MAINSCENE_BUTTON_ARR_CNT; a++) {
+    auto def = buttonDef[a];
+    buttons[a] = new Button(def.id, def.x, def.y, def.w, def.h);
+    buttons[a]
+        ->Label(def.label)
+        ->LabelOffset(8, 8)
+        ->OnEvent(&OnButton) // Setting all Event to be Handled
+                             // by OnButton
+        // Disableing Event-Handling for Hover and Hold Events
+        ->OnHover(NULL)
+        ->OnHold(NULL);
+
+    p.stage->AddActor(buttons[a]);
+  }
 }
 
 Scene *MainScene::OnUnload(Play p) {
   std::cout << "Scene unload" << std::endl;
-  p.stage->RemoveActor(&btn1);
-  p.stage->RemoveActor(&btn2);
+
+  for (int a = 0; a < MAINSCENE_BUTTON_ARR_CNT; a++) {
+    p.stage->RemoveActor(buttons[a]);
+    delete buttons[a];
+  }
+
   return NULL;
 }
 
