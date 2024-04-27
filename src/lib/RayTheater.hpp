@@ -249,7 +249,7 @@ public:
    * @param a the pointer to the actor to remove (Must be the same value as
    * given in AddActor)
    */
-  void RemoveActor(Actor *a);
+  template <typename T> void RemoveActor(T *a);
 
   /**
    * @brief By default Actors are invisible / Not rendered
@@ -649,7 +649,10 @@ template <typename T> inline void Stage::AddActor(T *a) {
  *
  * @param a - the actor to remove
  */
-inline void Stage::RemoveActor(Actor *a) {
+template <typename T> inline void Stage::RemoveActor(T *a) {
+  static_assert(std::is_base_of<Actor, T>::value,
+                "Cant call RemoveActor with none Actors");
+
   if (_sceneUnloading)
     ClearActorFromStage(a);
   else {

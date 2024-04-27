@@ -4,8 +4,10 @@
 #include "lib/RayTheater.hpp"
 #include "lib/RayTheaterUI.hpp"
 
+#include "./scene_circle_line_intersection.hpp"
 #include "actors/debug.h"
 #include "actors/mouse.h"
+#include "subscene.h"
 
 using namespace Theater;
 using namespace Theater::UI;
@@ -14,28 +16,30 @@ namespace Scenes {
 
 #define MAINSCENE_BUTTON_ARR_CNT 2
 
-class MainScene : public Scene {
+class MainScene : public SubScene {
 public:
-  MainScene();
+  MainScene(CircleLineIntersectionScene *);
 
 private:
   struct SceneButton {
-    int id;
     float x, y, w, h;
     std::string label;
+    SubScene *scene;
   };
 
   Button::ButtonEventHandler OnButton;
+  Button::ButtonEventHandler OnBack;
 
-  Actors::DebugActor theDebug;
   Actors::Mouse mousePtr;
 
   SceneButton buttonDef[MAINSCENE_BUTTON_ARR_CNT] = {
-      {1, 8, 8, 64, 24, "Btn 1"},
-      {1, 76, 8, 64, 24, "Btn 2"},
+      {8, 8, 128, 24, "Circle Line - Collision", NULL},
+      {8, 34, 64, 24, "Exit", NULL},
   };
 
   Button *buttons[MAINSCENE_BUTTON_ARR_CNT];
+  Button backBtn;
+  SubScene *activeScene = NULL;
 
   //==============================================================================
   // Implement Stage:Stage:::Scene
@@ -43,7 +47,6 @@ private:
 public:
   void OnLoad(Play p) override;
   Theater::Scene *OnUnload(Play) override;
-  bool OnTick(Play p) override;
 };
 
 } // namespace Scenes

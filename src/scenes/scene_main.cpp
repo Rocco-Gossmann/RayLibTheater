@@ -1,4 +1,6 @@
 #include "scenes/scene_main.h"
+#include <cstdio>
+#include <cstdlib>
 #include <iostream>
 
 using namespace Theater;
@@ -6,10 +8,26 @@ using namespace Theater::UI;
 
 namespace Scenes {
 
-MainScene::MainScene() : OnButton(NULL) {
-  OnButton = [](int id, Button::ButtonEvent e, Button *btn) {
-    std::cout << " Hit Button (" << e << "): " << id << std::endl;
+MainScene::MainScene(CircleLineIntersectionScene *scli)
+    : backBtn(INT_MAX, 262, 168, 48, 24), OnButton(NULL), activeScene(NULL) {
+
+  OnButton = [this](int id, Button::ButtonEvent e, Button *btn) {
+    if (e == Theater::UI::Button::BTN_RELEASE) {
+      activeScene = this->buttonDef[id].scene;
+      this->TransitionTo(activeScene);
+    }
   };
+
+  OnBack = [this](int id, Button::ButtonEvent _1, Button *_2) {
+    if (activeScene != NULL) {
+      activeScene->TransitionTo(this);
+      activeScene = NULL;
+    }
+  };
+
+  buttonDef[0].scene = scli;
+
+  backBtn.Label("back")->OnRelease(&OnBack);
 }
 
 //==============================================================================
@@ -18,10 +36,11 @@ MainScene::MainScene() : OnButton(NULL) {
 void MainScene::OnLoad(Play p) {
   std::cout << "Scene load" << std::endl;
   p.stage->AddActor(&mousePtr);
+  p.stage->RemoveActor(&backBtn);
 
   for (int a = 0; a < MAINSCENE_BUTTON_ARR_CNT; a++) {
     auto def = buttonDef[a];
-    buttons[a] = new Button(def.id, def.x, def.y, def.w, def.h);
+    buttons[a] = new Button(a, def.x, def.y, def.w, def.h);
     buttons[a]
         ->Label(def.label)
         ->LabelOffset(8, 8)
@@ -43,9 +62,9 @@ Scene *MainScene::OnUnload(Play p) {
     delete buttons[a];
   }
 
-  return NULL;
-}
+  p.stage->AddActor(&backBtn);
 
-bool MainScene::OnTick(Play p) { return true; }
+  return SubScene::OnUnload(p);
+}
 
 } // namespace Scenes
