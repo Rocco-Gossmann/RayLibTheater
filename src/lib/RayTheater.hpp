@@ -18,7 +18,7 @@
 
 // Defining how many actors can be handled each frame
 #ifndef ACTORLIMIT
-#define ACTORLIMIT 256
+#define ACTORLIMIT 64
 #endif
 
 #ifndef RAYTHEATER_H
@@ -592,8 +592,9 @@ inline void Stage::Play(Scene *sc) {
 }
 
 inline void Stage::switchScene(Scene *sc) {
+  _sceneUnloading = true;
+
   if (_scene != NULL) {
-    _sceneUnloading = true;
 
     if (sc == NULL)
       sc = _scene->OnUnload(_play);
@@ -601,14 +602,14 @@ inline void Stage::switchScene(Scene *sc) {
       _scene->OnUnload(_play);
 
     _scene = NULL;
-
-    _sceneUnloading = false;
   }
 
   if (sc != NULL) {
     sc->OnLoad(_play);
     _scene = sc;
   }
+
+  _sceneUnloading = false;
 }
 
 inline void Stage::BorderColor(Color c) { _borderColor = c; }
@@ -635,10 +636,10 @@ template <typename T> inline void Stage::AddActor(T *a) {
   _actorsToClear.insert(a);
 
   if (std::is_base_of<Ticking, T>::value)
-    _handle_TICKING.insert((Ticking *)a);
+    _handle_TICKING.insert((Ticking *)(a));
 
   if (std::is_base_of<Transform2D, T>::value)
-    _handle_TRANSFORMABLE.insert((Transform2D *)a);
+    _handle_TRANSFORMABLE.insert((Transform2D *)(a));
 
   ((Actor *)a)->OnStageEnter(_play);
 }
@@ -727,6 +728,10 @@ template <typename T> inline void Stage::MakeActorInvisible(T *actor) {
   if (std::is_base_of<Actor, T>::value) {
     ((Actor *)actor)->_attributes.erase(VISIBLE);
   }
+
+  // if the objects _renderListIndex is -1 -> do nothing
+  if (vis->_renderListIndex == -1)
+    return;
 
   _renderNodeCnt--;
   // If the removed element is not the last one.
