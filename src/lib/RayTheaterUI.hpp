@@ -1,5 +1,6 @@
 #include "raylib.h"
 #include <string>
+#include <type_traits>
 #ifndef RayTheaterUI
 #define RayTheaterUI 1
 
@@ -7,6 +8,35 @@
 
 namespace Theater {
 namespace UI {
+
+//==============================================================================
+// BM: Label - Class
+//==============================================================================
+class Label : public Actor, public Visible {
+public:
+  struct UIStyle {
+    Color textColor = WHITE;
+    float fontSize = 10;
+    Font font = GetFontDefault();
+  };
+
+  Label();
+  Label(std::string);
+
+  Label *Text(std::string);
+  Label *Style(UIStyle *);
+  Label *Position(float x, float y);
+
+private:
+  Vector2 _pos;
+  UIStyle *_style;
+  std::string _text;
+
+public:
+  // Implement - Visible
+  //------------------------------------------------------------------------------
+  void OnDraw(Play) override;
+};
 
 //==============================================================================
 // BM: Button - Class
@@ -102,12 +132,13 @@ public:
 //==============================================================================
 // BM: Button - Implementation
 //==============================================================================
-static Button::UIStyle defaultStyle = {};
+static Button::UIStyle defaultButtonStyle = {};
 
 inline Button::Button(int id, float x, float y, float w, float h)
     : Actor(), Visible(this), Ticking(this), _drawRect({x, y, w, h}), _id(id),
-      _label(std::to_string(id)), _state(STATE_IDLE), _style(&defaultStyle),
-      _srcRect({0, 0, w, -h}), _textOrigin({0, 0}) {}
+      _label(std::to_string(id)), _state(STATE_IDLE),
+      _style(&defaultButtonStyle), _srcRect({0, 0, w, -h}),
+      _textOrigin({0, 0}) {}
 
 inline Button::~Button() { UnloadRenderTexture(_texture); }
 
@@ -286,6 +317,38 @@ inline Button *Button::Style(Button::UIStyle *s) {
   return this;
 }
 
+//==============================================================================
+// BM: Label - Implementation
+//==============================================================================
+static Label::UIStyle defaultLabelStyle = {};
+
+inline Label::Label()
+    : Actor(), Visible(this), _style(&defaultLabelStyle), _pos({0, 0}),
+      _text(" - ") {}
+inline Label::Label(std::string txt) : Label() { _text = txt; };
+
+inline Label *Label::Text(std::string s) {
+  _text = s;
+  return this;
+}
+inline Label *Label::Position(float x, float y) {
+  this->_pos.x = x;
+  this->_pos.y = y;
+  return this;
+}
+inline Label *Label::Style(UIStyle *s) {
+  if (s == NULL)
+    _style = &defaultLabelStyle;
+  else
+    _style = s;
+
+  return this;
+};
+
+inline void Label::OnDraw(Play p) {
+  DrawTextPro(_style->font, _text.c_str(), _pos, {0, 0}, 0, _style->fontSize, 1,
+              _style->textColor);
+}
 } // namespace UI
 } // namespace Theater
 

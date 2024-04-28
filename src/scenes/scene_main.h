@@ -40,6 +40,7 @@ private:
 
   Button *buttons[MAINSCENE_BUTTON_ARR_CNT];
   Button backBtn;
+  Label versionLabel;
   SubScene *activeScene = NULL;
 
   //==============================================================================

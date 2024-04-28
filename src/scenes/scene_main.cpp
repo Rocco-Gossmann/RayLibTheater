@@ -1,5 +1,6 @@
 #include "scenes/scene_main.h"
 #include "raylib.h"
+#include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
@@ -38,6 +39,8 @@ MainScene::MainScene(CircleLineIntersectionScene *scli)
 
   // Configure Backbutton
   backBtn.Label("back")->Style(&_btnStyle)->OnRelease(&OnBack);
+  versionLabel.Position(8, 320 - 16)->Text("Version: 0.1 - dev");
+  versionLabel.SetRenderLayer(INT_MAX - 1);
 }
 
 //==============================================================================
@@ -47,6 +50,9 @@ void MainScene::OnLoad(Play p) {
 
   SetExitKey(KEY_NULL);
   p.stage->AddActor(&mousePtr);
+
+  p.stage->AddActor(&versionLabel);
+  p.stage->MakeActorVisible(&versionLabel);
 
   // When ever this Scene is loaded, make sure
   // the Back-Button is not visible
