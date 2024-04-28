@@ -1,4 +1,5 @@
 #include "scenes/scene_main.h"
+#include "raylib.h"
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
@@ -11,13 +12,16 @@ namespace Scenes {
 MainScene::MainScene(CircleLineIntersectionScene *scli)
     : backBtn(INT_MAX, 262, 168, 48, 24), OnButton(NULL), activeScene(NULL) {
 
-  OnButton = [this](int id, Button::ButtonEvent e, Button *btn) {
-    if (e == Theater::UI::Button::BTN_RELEASE) {
-      activeScene = this->buttonDef[id].scene;
-      this->TransitionTo(activeScene);
-    }
+  // Hook up the SubScene
+  buttonDef[0].scene = scli;
+
+  // Define Button Action
+  OnButton = [this](int id, Button::ButtonEvent _1, Button *_2) {
+    activeScene = this->buttonDef[id].scene;
+    this->TransitionTo(activeScene);
   };
 
+  // Define Button Action
   OnBack = [this](int id, Button::ButtonEvent _1, Button *_2) {
     if (activeScene != NULL) {
       activeScene->TransitionTo(this);
@@ -25,31 +29,29 @@ MainScene::MainScene(CircleLineIntersectionScene *scli)
     }
   };
 
-  buttonDef[0].scene = scli;
-
-  backBtn.Label("back")->OnRelease(&OnBack);
+  // Configure Backbutton
+  backBtn.Label("back")->Style(&_btnStyle)->OnRelease(&OnBack);
 }
 
 //==============================================================================
 // Implement Theater::Scene
 //==============================================================================
 void MainScene::OnLoad(Play p) {
-  std::cout << "Scene load" << std::endl;
+
+  SetExitKey(KEY_NULL);
   p.stage->AddActor(&mousePtr);
+
+  // When ever this Scene is loaded, make sure
+  // the Back-Button is not visible
   p.stage->RemoveActor(&backBtn);
 
-  for (int a = 0; a < MAINSCENE_BUTTON_ARR_CNT; a++) {
+  // Create Buttons for all configured Scenes
+  // the Back-Button is not visible
+  int y = 8;
+  for (int a = 0; a < MAINSCENE_BUTTON_ARR_CNT; a++, y += 28) {
     auto def = buttonDef[a];
-    buttons[a] = new Button(a, def.x, def.y, def.w, def.h);
-    buttons[a]
-        ->Label(def.label)
-        ->LabelOffset(8, 8)
-        ->OnEvent(&OnButton) // Setting all Event to be Handled
-                             // by OnButton
-        // Disableing Event-Handling for Hover and Hold Events
-        ->OnHover(NULL)
-        ->OnHold(NULL);
-
+    buttons[a] = new Button(a, 8, y, def.w, 24);
+    buttons[a]->Label(def.label)->Style(&_btnStyle)->OnRelease(&OnButton);
     p.stage->AddActor(buttons[a]);
   }
 }

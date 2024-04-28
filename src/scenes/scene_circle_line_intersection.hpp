@@ -4,7 +4,6 @@
 
 #include "raylib.h"
 #include <cmath>
-#include <iostream>
 
 #include "../lib/RayTheater.hpp"
 #include "./subscene.h"
@@ -19,7 +18,7 @@ class CircleLineIntersectionScene : public SubScene {
   // BM: Implement Theater::Scene
   //==============================================================================
 public:
-  void OnStageDraw(Play p) {
+  void OnStageDraw(Play p) override {
 
     float cx = p.mouseLoc.x;
     float cy = p.mouseLoc.y;

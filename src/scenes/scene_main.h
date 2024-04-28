@@ -5,7 +5,6 @@
 #include "lib/RayTheaterUI.hpp"
 
 #include "./scene_circle_line_intersection.hpp"
-#include "actors/debug.h"
 #include "actors/mouse.h"
 #include "subscene.h"
 
@@ -22,19 +21,20 @@ public:
 
 private:
   struct SceneButton {
-    float x, y, w, h;
+    float w;
     std::string label;
     SubScene *scene;
   };
 
   Button::ButtonEventHandler OnButton;
   Button::ButtonEventHandler OnBack;
+  Button::UIStyle _btnStyle;
 
   Actors::Mouse mousePtr;
 
   SceneButton buttonDef[MAINSCENE_BUTTON_ARR_CNT] = {
-      {8, 8, 128, 24, "Circle Line - Collision", NULL},
-      {8, 34, 64, 24, "Exit", NULL},
+      {128, "Circle Line - Collision", NULL},
+      {64, "Exit", NULL},
   };
 
   Button *buttons[MAINSCENE_BUTTON_ARR_CNT];

@@ -11,7 +11,6 @@ namespace UI {
 //==============================================================================
 // BM: Button - Class
 //==============================================================================
-
 class Button : public Actor,
                public ColliderRect,
                public Visible,
@@ -22,10 +21,19 @@ public:
 
   typedef std::function<void(int, ButtonEvent, Button *)> ButtonEventHandler;
 
+  struct UIStyle {
+    Color textColor = WHITE;
+    Color backgroundColor = GRAY;
+    Vector2 labelOffset = {2, 2};
+    float labelFontSize = 10;
+    Font font = GetFontDefault();
+  };
+
   Button(int id, float x, float y, float w, float h);
 
   Button *Label(std::string str);
-  Button *LabelOffset(float x, float y);
+
+  Button *Style(UIStyle *);
 
   Button *OnHover(ButtonEventHandler *h);
   Button *OnPress(ButtonEventHandler *h);
@@ -36,19 +44,19 @@ public:
   Button *OnEvent(ButtonEventHandler *h);
 
 private:
+  static UIStyle defaultStyle;
+
+  UIStyle *_style;
+  bool _showBG = true;
+  bool _showLabel = true;
+
   enum ButtonState { STATE_IDLE, STATE_ACTIVATE, STATE_HELD };
   ButtonState _state;
 
   int _id;
   Rectangle _drawRect;
   std::string _label;
-  Vector2 _labelOffset;
-  float _labelSize;
-
-  Font _font;
-
-  Color _drawFGColor;
-  Color _drawBGColor;
+  Vector2 _labelPosition;
 
   ButtonEventHandler *_hoverhandler = NULL;
   ButtonEventHandler *_presshandler = NULL;
@@ -58,7 +66,7 @@ private:
 
   // Helpers
   //==============================================================================
-  void backToIdle(ButtonEvent ev = BTN_OUT);
+  void rerender();
 
   // Interfaces
   //==============================================================================
@@ -85,18 +93,35 @@ public:
 // BM: Button - Implementation
 //==============================================================================
 
+inline Button::UIStyle Button::defaultStyle = {};
+
 inline Button::Button(int id, float x, float y, float w, float h)
     : Actor(), Visible(this), Ticking(this), _drawRect({x, y, w, h}), _id(id),
-      _font(GetFontDefault()), _label(std::to_string(id)), _drawFGColor(WHITE),
-      _state(STATE_IDLE), _drawBGColor(GRAY), _labelOffset({x, y}),
-      _labelSize(10) {}
+      _label(std::to_string(id)), _state(STATE_IDLE), _style(&defaultStyle) {
+  rerender();
+}
+
+inline void Button::rerender() {
+  this->_showBG = (_style->backgroundColor.a + _style->backgroundColor.r +
+                   _style->backgroundColor.g + _style->backgroundColor.b) > 0;
+
+  this->_showLabel = (_style->textColor.a + _style->textColor.r +
+                      _style->textColor.g + _style->textColor.b) > 0 &&
+                     this->_label.size() > 0;
+
+  this->_labelPosition.x = this->_drawRect.x + this->_style->labelOffset.x;
+  this->_labelPosition.y = this->_drawRect.y + this->_style->labelOffset.y;
+}
 
 inline Rectangle Button::getRect() { return _drawRect; }
 
 inline void Button::OnDraw(Play p) {
-  DrawRectangleRec(_drawRect, _drawBGColor);
-  DrawTextPro(_font, _label.c_str(), _labelOffset, {0, 0}, 0, _labelSize, 1,
-              _drawFGColor);
+  if (_showBG)
+    DrawRectangleRec(_drawRect, _style->backgroundColor);
+
+  if (_showLabel)
+    DrawTextPro(_style->font, _label.c_str(), this->_labelPosition, {0, 0}, 0,
+                _style->labelFontSize, 1, _style->textColor);
 }
 
 inline bool Button::OnTick(Play p) {
@@ -175,23 +200,24 @@ inline Button *Button::OnOut(ButtonEventHandler *h) {
   return this;
 }
 
-inline Button *Button::Label(std::string str) {
-  _label = str;
-  return this;
-}
-
-inline Button *Button::LabelOffset(float x, float y) {
-  _labelOffset.x = _drawRect.x + x;
-  _labelOffset.y = _drawRect.y + y;
-  return this;
-}
-
 inline Button *Button::OnEvent(ButtonEventHandler *h) {
   _hoverhandler = h;
   _presshandler = h;
   _holdhandler = h;
   _releasehandler = h;
   _outhandler = h;
+  return this;
+}
+
+inline Button *Button::Label(std::string str) {
+  _label = str;
+  this->rerender();
+  return this;
+}
+
+inline Button *Button::Style(Button::UIStyle *s) {
+  this->_style = s;
+  this->rerender();
   return this;
 }
 
