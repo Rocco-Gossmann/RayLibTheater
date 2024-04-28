@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
 
   Scenes::MainScene scMain(&scCircleLineIntersection);
 
-  Theater::Builder(320, 200, 2.0)
+  Theater::Builder(480, 320, 2)
       .Title("RayLib - Window 🎉")
       .Play((Scene *)&scMain);
 

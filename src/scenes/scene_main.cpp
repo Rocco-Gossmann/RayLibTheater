@@ -12,6 +12,13 @@ namespace Scenes {
 MainScene::MainScene(CircleLineIntersectionScene *scli)
     : backBtn(INT_MAX, 262, 168, 48, 24), OnButton(NULL), activeScene(NULL) {
 
+  // Set Button Style
+  _btnStyle.roundTL = false;
+  _btnStyle.roundBR = false;
+  _btnStyle.borderRadius = 0.5;
+  _btnStyle.labelOffset.x = 8;
+  _btnStyle.labelOffset.y = 8;
+
   // Hook up the SubScene
   buttonDef[0].scene = scli;
 

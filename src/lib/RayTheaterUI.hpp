@@ -27,9 +27,17 @@ public:
     Vector2 labelOffset = {2, 2};
     float labelFontSize = 10;
     Font font = GetFontDefault();
+
+    float borderRadius = 1;
+
+    bool roundTL = true;
+    bool roundTR = true;
+    bool roundBL = true;
+    bool roundBR = true;
   };
 
   Button(int id, float x, float y, float w, float h);
+  ~Button();
 
   Button *Label(std::string str);
 
@@ -44,11 +52,10 @@ public:
   Button *OnEvent(ButtonEventHandler *h);
 
 private:
-  static UIStyle defaultStyle;
-
   UIStyle *_style;
   bool _showBG = true;
   bool _showLabel = true;
+  bool _onStage = false;
 
   enum ButtonState { STATE_IDLE, STATE_ACTIVATE, STATE_HELD };
   ButtonState _state;
@@ -58,11 +65,16 @@ private:
   std::string _label;
   Vector2 _labelPosition;
 
+  Rectangle _srcRect;
+  Vector2 _textOrigin;
+
   ButtonEventHandler *_hoverhandler = NULL;
   ButtonEventHandler *_presshandler = NULL;
   ButtonEventHandler *_holdhandler = NULL;
   ButtonEventHandler *_releasehandler = NULL;
   ButtonEventHandler *_outhandler = NULL;
+
+  RenderTexture2D _texture;
 
   // Helpers
   //==============================================================================
@@ -92,16 +104,19 @@ public:
 //==============================================================================
 // BM: Button - Implementation
 //==============================================================================
-
-inline Button::UIStyle Button::defaultStyle = {};
+static Button::UIStyle defaultStyle = {};
 
 inline Button::Button(int id, float x, float y, float w, float h)
     : Actor(), Visible(this), Ticking(this), _drawRect({x, y, w, h}), _id(id),
-      _label(std::to_string(id)), _state(STATE_IDLE), _style(&defaultStyle) {
-  rerender();
-}
+      _label(std::to_string(id)), _state(STATE_IDLE), _style(&defaultStyle),
+      _srcRect({0, 0, w, -h}), _textOrigin({0, 0}) {}
+
+inline Button::~Button() { UnloadRenderTexture(_texture); }
 
 inline void Button::rerender() {
+  if (!_onStage)
+    return;
+
   this->_showBG = (_style->backgroundColor.a + _style->backgroundColor.r +
                    _style->backgroundColor.g + _style->backgroundColor.b) > 0;
 
@@ -111,17 +126,64 @@ inline void Button::rerender() {
 
   this->_labelPosition.x = this->_drawRect.x + this->_style->labelOffset.x;
   this->_labelPosition.y = this->_drawRect.y + this->_style->labelOffset.y;
+
+  BeginTextureMode(_texture);
+  ClearBackground(BLANK);
+
+  float rad = fmin(this->_drawRect.width, this->_drawRect.height) *
+              (this->_style->borderRadius * 0.5);
+  float rad2 = rad * 2;
+
+  if (_showBG) {
+
+    if (rad > 0) {
+      if (_style->roundTL)
+        DrawCircle(rad, rad, rad, this->_style->backgroundColor);
+      else
+        DrawRectangle(0, 0, rad2, rad2, this->_style->backgroundColor);
+
+      if (_style->roundTR)
+        DrawCircle(this->_drawRect.width - rad, rad, rad,
+                   this->_style->backgroundColor);
+      else
+        DrawRectangle(0, this->_drawRect.width - rad2, rad2, rad2,
+                      this->_style->backgroundColor);
+
+      if (_style->roundBL)
+        DrawCircle(rad, this->_drawRect.height - rad, rad,
+                   this->_style->backgroundColor);
+      else
+        DrawRectangle(0, this->_drawRect.height - rad2, rad2, rad2,
+                      this->_style->backgroundColor);
+
+      if (_style->roundBR)
+        DrawCircle(this->_drawRect.width - rad, this->_drawRect.height - rad,
+                   rad, this->_style->backgroundColor);
+
+      else
+        DrawRectangle(this->_drawRect.width - rad2,
+                      this->_drawRect.height - rad2, rad2, rad2,
+                      this->_style->backgroundColor);
+
+      DrawRectangle(rad, 0, this->_drawRect.width - rad2,
+                    this->_drawRect.height, this->_style->backgroundColor);
+    }
+
+    DrawRectangle(0, rad, this->_drawRect.width, this->_drawRect.height - rad2,
+                  this->_style->backgroundColor);
+  }
+
+  if (_showLabel)
+    DrawTextPro(_style->font, _label.c_str(), this->_style->labelOffset, {0, 0},
+                0, _style->labelFontSize, 1, _style->textColor);
+
+  EndTextureMode();
 }
 
 inline Rectangle Button::getRect() { return _drawRect; }
 
 inline void Button::OnDraw(Play p) {
-  if (_showBG)
-    DrawRectangleRec(_drawRect, _style->backgroundColor);
-
-  if (_showLabel)
-    DrawTextPro(_style->font, _label.c_str(), this->_labelPosition, {0, 0}, 0,
-                _style->labelFontSize, 1, _style->textColor);
+  DrawTexturePro(_texture.texture, _srcRect, _drawRect, _textOrigin, 0, WHITE);
 }
 
 inline bool Button::OnTick(Play p) {
@@ -173,8 +235,17 @@ inline bool Button::OnTick(Play p) {
   return true;
 }
 
-inline void Button::OnStageEnter(Play p) { p.stage->MakeActorVisible(this); }
-inline void Button::OnStageLeave(Play p) { p.stage->MakeActorInvisible(this); }
+inline void Button::OnStageEnter(Play p) {
+  _texture = LoadRenderTexture(_drawRect.width, _drawRect.height);
+  _onStage = true;
+  rerender();
+  p.stage->MakeActorVisible(this);
+}
+inline void Button::OnStageLeave(Play p) {
+  p.stage->MakeActorInvisible(this);
+  _onStage = false;
+  UnloadRenderTexture(_texture);
+}
 
 //==============================================================================
 // BM: Button - Implementation - Setters
