@@ -37,6 +37,8 @@ The Setup-Process is pretty much inspired by the
 # Additions
 ### RayTheaterUI.hpp
 Contains predefined Actor-Classes, that can play UI-Components like Buttons, labels, etc.  
+[goto Documentation](./docs/additions/ui.md)
+
 
 - Adding Buttons (TODO: Document this)
 

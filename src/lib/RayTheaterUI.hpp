@@ -28,7 +28,7 @@ public:
     float labelFontSize = 10;
     Font font = GetFontDefault();
 
-    float borderRadius = 1;
+    float cornorRadius = .25;
 
     bool roundTL = true;
     bool roundTR = true;
@@ -53,8 +53,6 @@ public:
 
 private:
   UIStyle *_style;
-  bool _showBG = true;
-  bool _showLabel = true;
   bool _onStage = false;
 
   enum ButtonState { STATE_IDLE, STATE_ACTIVATE, STATE_HELD };
@@ -117,13 +115,6 @@ inline void Button::rerender() {
   if (!_onStage)
     return;
 
-  this->_showBG = (_style->backgroundColor.a + _style->backgroundColor.r +
-                   _style->backgroundColor.g + _style->backgroundColor.b) > 0;
-
-  this->_showLabel = (_style->textColor.a + _style->textColor.r +
-                      _style->textColor.g + _style->textColor.b) > 0 &&
-                     this->_label.size() > 0;
-
   this->_labelPosition.x = this->_drawRect.x + this->_style->labelOffset.x;
   this->_labelPosition.y = this->_drawRect.y + this->_style->labelOffset.y;
 
@@ -131,10 +122,11 @@ inline void Button::rerender() {
   ClearBackground(BLANK);
 
   float rad = fmin(this->_drawRect.width, this->_drawRect.height) *
-              (this->_style->borderRadius * 0.5);
+              (this->_style->cornorRadius * 0.5);
   float rad2 = rad * 2;
 
-  if (_showBG) {
+  if ((_style->backgroundColor.a + _style->backgroundColor.r +
+       _style->backgroundColor.g + _style->backgroundColor.b) > 0) {
 
     if (rad > 0) {
       if (_style->roundTL)
@@ -173,7 +165,9 @@ inline void Button::rerender() {
                   this->_style->backgroundColor);
   }
 
-  if (_showLabel)
+  if ((_style->textColor.a + _style->textColor.r + _style->textColor.g +
+       _style->textColor.b) > 0 &&
+      this->_label.size() > 0)
     DrawTextPro(_style->font, _label.c_str(), this->_style->labelOffset, {0, 0},
                 0, _style->labelFontSize, 1, _style->textColor);
 

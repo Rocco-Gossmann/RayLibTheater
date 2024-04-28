@@ -3,8 +3,9 @@
 
 #include "lib/RayTheater.hpp"
 #include "lib/RayTheaterUI.hpp"
+using namespace Theater::UI;
 
-#include "./scene_circle_line_intersection.hpp"
+#include "./scene_circle_line_intersection.h"
 #include "actors/mouse.h"
 #include "subscene.h"
 

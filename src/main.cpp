@@ -1,6 +1,6 @@
 #include "./lib/RayTheater.hpp"
 
-#include "./scenes/scene_circle_line_intersection.hpp"
+#include "./scenes/scene_circle_line_intersection.h"
 #include "./scenes/scene_main.h"
 
 int main(int argc, char **argv) {

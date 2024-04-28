@@ -15,7 +15,7 @@ MainScene::MainScene(CircleLineIntersectionScene *scli)
   // Set Button Style
   _btnStyle.roundTL = false;
   _btnStyle.roundBR = false;
-  _btnStyle.borderRadius = 0.5;
+  _btnStyle.cornorRadius = 0.5;
   _btnStyle.labelOffset.x = 8;
   _btnStyle.labelOffset.y = 8;
 
