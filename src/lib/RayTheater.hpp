@@ -215,23 +215,23 @@ public:
 
   void TransitionTo(Scene *s) {
     _followup = s;
-    _hasFollowup = true;
+    _transitionRequested = true;
   }
 
   Scene *followup() { return _followup; }
 
 private:
-  bool _hasFollowup = false;
+  bool _transitionRequested = false;
   Scene *_followup = NULL;
 
   bool Tick(Play p) {
     OnUpdate(p);
-    return !_hasFollowup;
+    return !_transitionRequested;
   }
 
-  Scene *OnUnload(Play p) {
+  Scene *Unload(Play p) {
     OnEnd(p);
-    _hasFollowup = false;
+    _transitionRequested = false;
     return _followup;
   }
 };
@@ -620,9 +620,9 @@ inline void Stage::switchScene(Scene *sc) {
   if (_scene != NULL) {
 
     if (sc == NULL)
-      sc = _scene->OnUnload(_play);
+      sc = _scene->Unload(_play);
     else
-      _scene->OnUnload(_play);
+      _scene->Unload(_play);
 
     _scene = NULL;
   }
