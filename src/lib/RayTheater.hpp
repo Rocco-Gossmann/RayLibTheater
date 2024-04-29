@@ -204,13 +204,36 @@ private:
 // BM: Scene - Class
 //=============================================================================
 class Scene {
+  friend Stage;
+
 public:
-  virtual void OnLoad(Play) {}
-  virtual Scene *OnUnload(Play) { return NULL; }
+  virtual void OnStart(Play) {}
+  virtual void OnUpdate(Play) {}
   virtual void OnStageDraw(Play) {}
   virtual void OnWindowDraw(Play) {}
+  virtual void OnEnd(Play) {}
 
-  virtual bool OnTick(Play) { return false; }
+  void TransitionTo(Scene *s) {
+    _followup = s;
+    _hasFollowup = true;
+  }
+
+  Scene *followup() { return _followup; }
+
+private:
+  bool _hasFollowup = false;
+  Scene *_followup = NULL;
+
+  bool Tick(Play p) {
+    OnUpdate(p);
+    return !_hasFollowup;
+  }
+
+  Scene *OnUnload(Play p) {
+    OnEnd(p);
+    _hasFollowup = false;
+    return _followup;
+  }
 };
 
 //=============================================================================
@@ -471,7 +494,7 @@ inline void Stage::Play(Scene *sc) {
   while (!WindowShouldClose() && _scene != NULL) {
 
     // Tick the Scene with the state crated by the last frame.
-    if (!_scene->OnTick(_play)) {
+    if (!_scene->Tick(_play)) {
       // If the scene should end, attempt a scene Switch instead of
       // continuing.
       switchScene(NULL);
@@ -605,7 +628,7 @@ inline void Stage::switchScene(Scene *sc) {
   }
 
   if (sc != NULL) {
-    sc->OnLoad(_play);
+    sc->OnStart(_play);
     _scene = sc;
   }
 

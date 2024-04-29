@@ -7,7 +7,6 @@ using namespace Theater::UI;
 
 #include "./scene_circle_line_intersection.h"
 #include "actors/mouse.h"
-#include "subscene.h"
 
 using namespace Theater;
 using namespace Theater::UI;
@@ -16,7 +15,7 @@ namespace Scenes {
 
 #define MAINSCENE_BUTTON_ARR_CNT 2
 
-class MainScene : public SubScene {
+class MainScene : public Scene {
 public:
   MainScene(CircleLineIntersectionScene *);
 
@@ -24,7 +23,7 @@ private:
   struct SceneButton {
     float w;
     std::string label;
-    SubScene *scene;
+    Scene *scene;
   };
 
   Button::ButtonEventHandler OnButton;
@@ -41,14 +40,14 @@ private:
   Button *buttons[MAINSCENE_BUTTON_ARR_CNT];
   Button backBtn;
   Label versionLabel;
-  SubScene *activeScene = NULL;
+  Scene *activeScene;
 
   //==============================================================================
   // Implement Stage:Stage:::Scene
   //==============================================================================
 public:
-  void OnLoad(Play p) override;
-  Theater::Scene *OnUnload(Play) override;
+  void OnStart(Play p) override;
+  void OnEnd(Play) override;
 };
 
 } // namespace Scenes

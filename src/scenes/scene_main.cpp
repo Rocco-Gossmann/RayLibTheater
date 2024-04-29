@@ -46,7 +46,7 @@ MainScene::MainScene(CircleLineIntersectionScene *scli)
 //==============================================================================
 // Implement Theater::Scene
 //==============================================================================
-void MainScene::OnLoad(Play p) {
+void MainScene::OnStart(Play p) {
 
   SetExitKey(KEY_NULL);
   p.stage->AddActor(&mousePtr);
@@ -69,7 +69,7 @@ void MainScene::OnLoad(Play p) {
   }
 }
 
-Scene *MainScene::OnUnload(Play p) {
+void MainScene::OnEnd(Play p) {
   std::cout << "Scene unload" << std::endl;
 
   for (int a = 0; a < MAINSCENE_BUTTON_ARR_CNT; a++) {
@@ -78,8 +78,6 @@ Scene *MainScene::OnUnload(Play p) {
   }
 
   p.stage->AddActor(&backBtn);
-
-  return SubScene::OnUnload(p);
 }
 
 } // namespace Scenes
