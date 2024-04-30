@@ -14,7 +14,7 @@ void Scenes::CircleLineIntersectionScene::OnStageDraw(Theater::Play p) {
   float y1 = 80;
   float y2 = 120;
 
-  DrawCircle(cx, cy, cr, BLUE);
+  DrawCircleLines(cx, cy, cr, BLUE);
 
   DrawLine(x1, y1, x2, y2, RED);
 

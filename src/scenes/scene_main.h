@@ -6,6 +6,7 @@
 using namespace Theater::UI;
 
 #include "./scene_circle_line_intersection.h"
+#include "./scene_point_in_polyshape.h"
 #include "actors/mouse.h"
 
 using namespace Theater;
@@ -13,11 +14,11 @@ using namespace Theater::UI;
 
 namespace Scenes {
 
-#define MAINSCENE_BUTTON_ARR_CNT 2
+#define MAINSCENE_BUTTON_ARR_CNT 3
 
 class MainScene : public Scene {
 public:
-  MainScene(CircleLineIntersectionScene *);
+  MainScene(CircleLineIntersectionScene *, PointInPolyShapeScene *);
 
 private:
   struct SceneButton {
@@ -34,6 +35,7 @@ private:
 
   SceneButton buttonDef[MAINSCENE_BUTTON_ARR_CNT] = {
       {128, "Circle Line - Collision", NULL},
+      {128, "Point in Poly - Collision", NULL},
       {64, "Exit", NULL},
   };
 
@@ -43,7 +45,7 @@ private:
   Scene *activeScene;
 
   //==============================================================================
-  // Implement Stage:Stage:::Scene
+  // Implement Theater::Scene
   //==============================================================================
 public:
   void OnStart(Play p) override;

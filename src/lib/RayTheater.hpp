@@ -91,13 +91,28 @@ typedef struct Play {
   /** @brief The available Stage Height in PX */
   int stageHeight = 0;
 
-  /** @brief Bitlist of mousebuttons pressed this turn */
+  /** @brief Bitlist of mousebuttons just pressed this turn
+   * Mouse Button 1 =  (1 << 1) aka bit 2;
+   * Mouse Button 2 =  (1 << 2) aka bit 4;
+   * Mouse Button 3 =  (1 << 3) aka bit 8;
+   * ...
+   */
   unsigned char mouseDown;
 
-  /** @brief Bitlist of mousebuttons held this turn */
+  /** @brief Bitlist of mousebuttons held this turn 
+   * Mouse Button 1 =  (1 << 1) aka bit 2;
+   * Mouse Button 2 =  (1 << 2) aka bit 4;
+   * Mouse Button 3 =  (1 << 3) aka bit 8;
+   * ...
+   */
   unsigned char mouseHeld;
 
-  /** @brief Bitlist of mousebuttons released this turn */
+  /** @brief Bitlist of mousebuttons not currently held or pressed
+   * Mouse Button 1 =  (1 << 1) aka bit 2;
+   * Mouse Button 2 =  (1 << 2) aka bit 4;
+   * Mouse Button 3 =  (1 << 3) aka bit 8;
+   * ...
+   */
   unsigned char mouseUp;
 
 } Play;
@@ -533,14 +548,15 @@ inline void Stage::Play(Scene *sc) {
     _play.mouseUp = 0;
     _play.mouseDown = 0;
 
-    for (unsigned char a = 0; a < 6; a++) {
-      _play.mouseDown |= (IsMouseButtonPressed(a) ? 1 : 0) << a;
-      _play.mouseHeld |= (IsMouseButtonDown(a) ? 1 : 0) << a;
-      _play.mouseUp |= (IsMouseButtonUp(a) ? 1 : 0) << a;
+    for (unsigned char a = 1; a < 7; a++) {
+      _play.mouseDown |= (IsMouseButtonPressed(a - 1) ? 1 : 0) << a;
+      _play.mouseHeld |= (IsMouseButtonDown(a - 1) ? 1 : 0) << a;
+      _play.mouseUp |= (IsMouseButtonUp(a - 1) ? 1 : 0) << a;
     }
 
     // Just in case held and Pressed overlap => remove Pressed from held.
     _play.mouseHeld &= ~_play.mouseDown;
+    _play.mouseUp &= ~(_play.mouseDown | _play.mouseHeld);
 
     // Tick all the actors
     for (Ticking *ticker : _handle_TICKING)
@@ -1173,7 +1189,7 @@ inline bool ColliderCircle::containsPoint(Vector2 p) {
   auto dstx1 = abs(pc.x - p.x);
   auto dsty1 = abs(pc.y - p.y);
 
-  return dstx1 * dstx1 + dsty1 * dsty1 > rad2;
+  return dstx1 * dstx1 + dsty1 * dsty1 <= rad2;
 }
 
 inline bool ColliderCircle::isCollidingWithPoint(ColliderPoint *p) {

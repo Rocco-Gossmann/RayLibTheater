@@ -1,17 +1,19 @@
 #include "scenes/scene_main.h"
 #include "raylib.h"
+#include "scene_point_in_polyshape.h"
 #include <climits>
 #include <cstdio>
 #include <cstdlib>
-#include <iostream>
 
 using namespace Theater;
 using namespace Theater::UI;
 
 namespace Scenes {
 
-MainScene::MainScene(CircleLineIntersectionScene *scli)
-    : backBtn(INT_MAX, 262, 168, 48, 24), OnButton(NULL), activeScene(NULL) {
+MainScene::MainScene(CircleLineIntersectionScene *scli,
+                     PointInPolyShapeScene *pips)
+    : backBtn(INT_MAX, 480 - 56, 320 - 32, 48, 24), OnButton(NULL),
+      activeScene(NULL) {
 
   // Set Button Style
   _btnStyle.roundTL = false;
@@ -22,6 +24,7 @@ MainScene::MainScene(CircleLineIntersectionScene *scli)
 
   // Hook up the SubScene
   buttonDef[0].scene = scli;
+  buttonDef[1].scene = pips;
 
   // Define Button Action
   OnButton = [this](int id, Button::ButtonEvent _1, Button *_2) {
@@ -49,8 +52,8 @@ MainScene::MainScene(CircleLineIntersectionScene *scli)
 void MainScene::OnStart(Play p) {
 
   SetExitKey(KEY_NULL);
-  p.stage->AddActor(&mousePtr);
 
+  p.stage->AddActor(&mousePtr);
   p.stage->AddActor(&versionLabel);
   p.stage->MakeActorVisible(&versionLabel);
 
@@ -59,7 +62,6 @@ void MainScene::OnStart(Play p) {
   p.stage->RemoveActor(&backBtn);
 
   // Create Buttons for all configured Scenes
-  // the Back-Button is not visible
   int y = 8;
   for (int a = 0; a < MAINSCENE_BUTTON_ARR_CNT; a++, y += 28) {
     auto def = buttonDef[a];
@@ -70,8 +72,6 @@ void MainScene::OnStart(Play p) {
 }
 
 void MainScene::OnEnd(Play p) {
-  std::cout << "Scene unload" << std::endl;
-
   for (int a = 0; a < MAINSCENE_BUTTON_ARR_CNT; a++) {
     p.stage->RemoveActor(buttons[a]);
     delete buttons[a];
