@@ -118,5 +118,5 @@ Methods
 An Actor with the `TRANSFORMABLE` Attribute implements the `Theater::Transform2D` Interface and thus receives access to functions like `getLoc`(ation) and `setLoc`(ation)
 Making it possible for others to influence the Actors transformations. 
 
-### TRANSFORMABLE
+### TICKING
 If an Actor has the `TICKING` Attribute, it runs it's own Update-routine once per cycle.
