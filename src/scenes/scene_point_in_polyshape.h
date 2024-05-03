@@ -10,7 +10,7 @@ using namespace Theater;
 
 namespace Scenes {
 
-class PointInPolyShapeScene : public Scene {
+class PointInPolyShapeScene : public Scene, public ColliderZone {
 
 public:
   PointInPolyShapeScene();
@@ -27,8 +27,9 @@ private:
   };
 
   std::vector<Vertex> dots;
+  std::vector<Vector2> shape;
 
-  unsigned int connectDots(int d1, int d2, Vector2 mouse);
+  void connectDots(int d1, int d2, Vector2 mouse);
 
 public:
   //==============================================================================
@@ -38,6 +39,11 @@ public:
   void OnStageDraw(Play) override;
   void OnWindowDraw(Play) override;
   void OnUpdate(Play) override;
+
+  //==============================================================================
+  // BM: Implement Collider Zone
+  //==============================================================================
+  std::vector<Vector2> *getZoneBorder() override;
 };
 
 } // namespace Scenes

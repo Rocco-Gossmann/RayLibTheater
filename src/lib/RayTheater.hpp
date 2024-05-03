@@ -1,3 +1,6 @@
+#ifndef RAYTHEATER_H
+#define RAYTHEATER_H
+
 #include <climits>
 #include <cmath>
 #include <cstdio>
@@ -20,9 +23,6 @@
 #ifndef ACTORLIMIT
 #define ACTORLIMIT 64
 #endif
-
-#ifndef RAYTHEATER_H
-#define RAYTHEATER_H
 
 namespace Theater {
 
@@ -99,7 +99,7 @@ typedef struct Play {
    */
   unsigned char mouseDown;
 
-  /** @brief Bitlist of mousebuttons held this turn 
+  /** @brief Bitlist of mousebuttons held this turn
    * Mouse Button 1 =  (1 << 1) aka bit 2;
    * Mouse Button 2 =  (1 << 2) aka bit 4;
    * Mouse Button 3 =  (1 << 3) aka bit 8;
@@ -996,27 +996,90 @@ Stage::GetActorsWithAttribute(Attributes attr) {
 class ColliderPoint;
 class ColliderCircle;
 class ColliderRect;
+class ColliderZone;
 
 class Collider {
   virtual bool isCollidingWithPoint(ColliderPoint *) = 0;
   virtual bool isCollidingWithRect(ColliderRect *) = 0;
   virtual bool isCollidingWithCircle(ColliderCircle *) = 0;
+  virtual bool isCollidingWithZone(ColliderZone *) = 0;
 
   virtual bool containsPoint(float x, float y) = 0;
-};
 
+public:
+  static bool zoneContainsPoint(std::vector<Vector2> *zoneborder,
+                                Vector2 point) {
+
+    switch (zoneborder->size()) {
+    case 0:
+      return false;
+      break;
+
+    case 1:
+      auto dot = zoneborder->at(0);
+      return dot.x == point.x && dot.y == point.y;
+      break;
+    }
+
+    auto connectDots = [](std::vector<Vector2> *dots, int d1, int d2,
+                          Vector2 point) {
+      unsigned int ret = 0;
+
+      auto pos1 = dots->at(d1);
+      auto pos2 = dots->at(d2);
+
+      unsigned char b1 = ((pos1.y <= point.y ? 1 : 0) << 0) |
+                         ((pos1.y > point.y ? 1 : 0) << 1);
+
+      unsigned char b2 = ((pos2.y <= point.y ? 1 : 0) << 0) |
+                         ((pos2.y > point.y ? 1 : 0) << 1);
+
+      if ((b1 ^ b2) == 3) {
+        float lineX = pos2.x - pos1.x;
+        float lineY = pos2.y - pos1.y;
+        float lineL = lineX * lineX + lineY * lineY;
+
+        float circleX = point.x - pos1.x;
+        float circleY = point.y - pos1.y;
+
+        float t =
+            fmax(0, fmin(lineL, (lineX * circleX + lineY * circleY))) / lineL;
+
+        float offsetX = pos1.x + ((pos2.x - pos1.x) * t);
+        float offsetY = pos1.y + ((pos2.y - pos1.y) * t);
+
+        return offsetX > point.x ? 1 : 0;
+      };
+
+      return 0;
+    };
+
+    unsigned int intersections = 0;
+    for (int a = 0; a < zoneborder->size() - 1; a++)
+      intersections += connectDots(zoneborder, a, a + 1, point);
+
+    intersections += connectDots(zoneborder, zoneborder->size() - 1, 0, point);
+
+    return (intersections & 1) == 1;
+  }
+};
 //==============================================================================
 // BM: Collider - Point - Class
 //==============================================================================
 class ColliderPoint : public Collider {
 public:
+  // Interface
+  //---------------------------------------------------------------------------
+  virtual Vector2 getPosition() = 0;
+
+  // Don't touch
+  //---------------------------------------------------------------------------
   bool isCollidingWithPoint(ColliderPoint *) override;
   bool isCollidingWithRect(ColliderRect *) override;
   bool isCollidingWithCircle(ColliderCircle *) override;
+  bool isCollidingWithZone(ColliderZone *) override;
 
   bool containsPoint(float x, float y) override;
-
-  virtual Vector2 getPosition() = 0;
 
 }; // namespace Theater
 
@@ -1024,14 +1087,17 @@ public:
 // BM: Collider - Rect - Class
 //==============================================================================
 class ColliderRect : public Collider {
-  // Virtual methods
 public:
+  // Interface
+  //---------------------------------------------------------------------------
   virtual Rectangle getRect() = 0;
 
-public:
+  // Don't touch
+  //---------------------------------------------------------------------------
   bool isCollidingWithPoint(ColliderPoint *) override;
   bool isCollidingWithRect(ColliderRect *) override;
   bool isCollidingWithCircle(ColliderCircle *) override;
+  bool isCollidingWithZone(ColliderZone *) override;
 
   bool rectContainsPoint(Rectangle r, Vector2 p);
   bool containsPoint(float x, float y) override;
@@ -1046,12 +1112,17 @@ private:
 //==============================================================================
 class ColliderCircle : public Collider {
 public:
+  // Interface
+  //---------------------------------------------------------------------------
+  virtual Vector2 getPosition() = 0;
+  virtual float getRadius() = 0;
+
+  // Don't touch
+  //---------------------------------------------------------------------------
   bool isCollidingWithPoint(ColliderPoint *) override;
   bool isCollidingWithRect(ColliderRect *) override;
   bool isCollidingWithCircle(ColliderCircle *) override;
-
-  virtual Vector2 getPosition() = 0;
-  virtual float getRadius() = 0;
+  bool isCollidingWithZone(ColliderZone *) override;
 
   bool containsPoint(float x, float y) override;
   bool containsPoint(Vector2 p);
@@ -1066,7 +1137,30 @@ private:
                            std::vector<Vector2> lst);
 };
 
-//=======================================0=======================================
+//==============================================================================
+// BM: Collider - Zone - Class
+//==============================================================================
+class ColliderZone : public Collider {
+public:
+  // Interface
+  //---------------------------------------------------------------------------
+  virtual std::vector<Vector2> *getZoneBorder() = 0;
+
+  // Don't touch
+  //---------------------------------------------------------------------------
+  bool isCollidingWithPoint(ColliderPoint *) override;
+  bool isCollidingWithRect(ColliderRect *) override;
+  bool isCollidingWithCircle(ColliderCircle *) override;
+  bool isCollidingWithZone(ColliderZone *) override;
+
+  bool containsPoint(float x, float y) override;
+
+private:
+  bool containsOneOfPoints(std::vector<Vector2> *shape,
+                           std::vector<Vector2> points);
+};
+
+//=============================================================================
 // BM: Collider - Point - Implementation
 //==============================================================================
 inline bool ColliderPoint::containsPoint(float x, float y) {
@@ -1085,6 +1179,10 @@ inline bool ColliderPoint::isCollidingWithRect(ColliderRect *r) {
 
 inline bool ColliderPoint::isCollidingWithCircle(ColliderCircle *c) {
   return c->containsPoint(getPosition());
+}
+
+inline bool ColliderPoint::isCollidingWithZone(ColliderZone *z) {
+  return zoneContainsPoint(z->getZoneBorder(), this->getPosition());
 }
 
 //==============================================================================
@@ -1122,6 +1220,10 @@ inline bool ColliderRect::isCollidingWithRect(ColliderRect *r) {
   auto r1 = this->getRect();
   auto r2 = r->getRect();
   return rectInRect(r1, r2) || rectInRect(r2, r2);
+}
+
+inline bool ColliderRect::isCollidingWithZone(ColliderZone *z) {
+  return z->isCollidingWithRect(this);
 }
 
 //==============================================================================
@@ -1223,5 +1325,69 @@ inline bool ColliderCircle::isCollidingWithRect(ColliderRect *rc) {
                               {r.x, r.y}});
 }
 
+inline bool ColliderCircle::isCollidingWithZone(ColliderZone *z) {
+  auto zoneShape = z->getZoneBorder();
+  auto circPos = getPosition();
+  auto circRad = getRadius();
+
+  return z->containsPoint(circPos.x, circPos.y) ||
+         circleHitsPolyShape(circPos, circRad, *zoneShape);
+}
+
+//==============================================================================
+// BM: Collider - Zone - Implementation
+//==============================================================================
+inline bool ColliderZone::containsOneOfPoints(std::vector<Vector2> *shape,
+                                              std::vector<Vector2> points) {
+  for (Vector2 point : points) {
+    if (zoneContainsPoint(shape, point))
+      return true;
+  }
+
+  return false;
+}
+
+inline bool ColliderZone::containsPoint(float x, float y) {
+  return zoneContainsPoint(getZoneBorder(), {x, y});
+}
+
+inline bool ColliderZone::isCollidingWithPoint(ColliderPoint *p) {
+  return zoneContainsPoint(getZoneBorder(), p->getPosition());
+}
+
+inline bool ColliderZone::isCollidingWithRect(ColliderRect *r) {
+  auto rect = r->getRect();
+  auto rectZone =
+      std::vector<Vector2>({{rect.x, rect.y},
+                            {rect.x + rect.width, rect.y},
+                            {rect.x + rect.width, rect.y + rect.height},
+                            {rect.x, rect.y + rect.height}});
+
+  auto shapeZone = getZoneBorder();
+
+  bool ret = containsOneOfPoints(shapeZone, rectZone);
+
+  if (!ret)
+    ret = containsOneOfPoints(&rectZone, *shapeZone);
+
+  return ret;
+};
+
+inline bool ColliderZone::isCollidingWithCircle(ColliderCircle *c) {
+  return c->isCollidingWithZone(this);
+}
+
+inline bool ColliderZone::isCollidingWithZone(ColliderZone *z) {
+  auto mePoints = getZoneBorder();
+  auto zPoints = z->getZoneBorder();
+
+  bool ret = containsOneOfPoints(mePoints, *zPoints);
+
+  if (!ret)
+    return containsOneOfPoints(zPoints, *mePoints);
+
+  return ret;
+}
+
 }; // namespace Theater
-#endif
+#endif // 0

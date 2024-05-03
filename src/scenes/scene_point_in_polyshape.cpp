@@ -11,6 +11,7 @@ void Scenes::PointInPolyShapeScene::OnUpdate(Theater::Play p) {
   // Place new Point with Left Button
   if ((p.mouseDown & (1 << 1)) > 0) {
     dots.push_back(Vertex(p.mouseLoc));
+    shape.push_back(p.mouseLoc);
     return;
   }
 
@@ -21,6 +22,7 @@ void Scenes::PointInPolyShapeScene::OnUpdate(Theater::Play p) {
 
       if (dot.containsPoint(p.mouseLoc)) {
         dots.erase(dots.begin() + a);
+        shape.erase(shape.begin() + a);
         break;
       }
     }
@@ -39,19 +41,15 @@ void Scenes::PointInPolyShapeScene::OnStageDraw(Theater::Play p) {
   // Draw Helper-Lines for Mouse Position
   DrawLine(p.mouseX, p.mouseY, p.stageWidth, p.mouseY, YELLOW);
 
-  unsigned int intersections = 0;
-
   // If there is at least 2 dots, draw the lines of the shape.
   if (dots.size() > 1) {
     for (int a = 0; a < dots.size() - 1; a++)
-      intersections += connectDots(a, a + 1, p.mouseLoc);
+      connectDots(a, a + 1, p.mouseLoc);
 
-    intersections += connectDots(dots.size() - 1, 0, p.mouseLoc);
-  }
+    connectDots(dots.size() - 1, 0, p.mouseLoc);
+  };
 
-  std::cout << "Intersections: " << intersections << std::endl;
-
-  if ((intersections & 1) == 1) {
+  if (this->containsPoint(p.mouseX, p.mouseY)) {
     DrawText("mouse In shape", 160, 8, 20, GREEN);
   }
 }
@@ -66,10 +64,7 @@ void Scenes::PointInPolyShapeScene::OnWindowDraw(Theater::Play p) {
   DrawText(str, 8, 8, 20, GREEN);
 }
 
-unsigned int Scenes::PointInPolyShapeScene::connectDots(int d1, int d2,
-                                                        Vector2 mouse) {
-
-  unsigned int ret = 0;
+void Scenes::PointInPolyShapeScene::connectDots(int d1, int d2, Vector2 mouse) {
 
   auto pos1 = dots.at(d1).getPosition();
   auto pos2 = dots.at(d2).getPosition();
@@ -98,11 +93,12 @@ unsigned int Scenes::PointInPolyShapeScene::connectDots(int d1, int d2,
       DrawCircle(offsetX, offsetY, 10, YELLOW);
       DrawLine(offsetX, offsetY, mouse.x, mouse.y, GREEN);
       c = RED;
-      ret = 1;
     }
   }
 
   DrawLine(pos1.x, pos1.y, pos2.x, pos2.y, c);
+}
 
-  return ret;
+std::vector<Vector2> *Scenes::PointInPolyShapeScene::getZoneBorder() {
+  return &shape;
 }
