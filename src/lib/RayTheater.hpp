@@ -115,6 +115,14 @@ typedef struct Play {
    */
   unsigned char mouseUp;
 
+  /** @brief Bitlist of mousebuttons that where released last Frame
+   * Mouse Button 1 =  (1 << 1) aka bit 2;
+   * Mouse Button 2 =  (1 << 2) aka bit 4;
+   * Mouse Button 3 =  (1 << 3) aka bit 8;
+   * ...
+   */
+  unsigned char mouseReleased;
+
 } Play;
 
 //=============================================================================
@@ -544,6 +552,7 @@ inline void Stage::Play(Scene *sc) {
     _play.mouseY = std::floor(_play.mouseLoc.y);
 
     // Update MouseButtons
+    _play.mouseReleased = _play.mouseHeld | _play.mouseDown;
     _play.mouseHeld = 0;
     _play.mouseUp = 0;
     _play.mouseDown = 0;
@@ -557,6 +566,7 @@ inline void Stage::Play(Scene *sc) {
     // Just in case held and Pressed overlap => remove Pressed from held.
     _play.mouseHeld &= ~_play.mouseDown;
     _play.mouseUp &= ~(_play.mouseDown | _play.mouseHeld);
+    _play.mouseReleased &= _play.mouseUp;
 
     // Tick all the actors
     for (Ticking *ticker : _handle_TICKING)
