@@ -6,8 +6,8 @@ DIRBUILD:=./build
 CSOURCE:=$(shell find $(DIRSRC) -name "*.cpp")
 OBJSRC:=$(patsubst $(DIRSRC)/%.cpp, $(DIRBUILD)/%.o, $(CSOURCE))
 
-RAYCFLAGS:=$(shell pkg-config --cflags raylib) -I./src
-RAYLFLAGS:=$(shell pkg-config --libs --cflags raylib) -I./src
+RAYCFLAGS:=$(shell pkg-config --cflags raylib) -I./src -I./src/lib
+RAYLFLAGS:=$(shell pkg-config --libs --cflags raylib) -I./src -I./src/lib
 
 DEBUGFLAGS:= -g -Wall -DDEBUG 
 debug.run: $(OBJSRC)
