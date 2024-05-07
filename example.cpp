@@ -90,7 +90,7 @@ public:
 };
 
 //==============================================================================
-// NOTE: Now let's create Scene to make use of these two actors.
+// NOTE: Now let's create the Scene to make use of these two actors.
 //
 // BM: Scene
 //==============================================================================
@@ -106,9 +106,10 @@ public:
   // NOTE: a Scene's OnStart Method is called once, before it starts playing
   void OnStart(Theater::Play p) {
 
+    // We can use it to set up the random number generator
     std::srand(time(NULL));
 
-    // We'll add our two actors to the Stage here
+    // and add our two actors to the Stage.
     p.stage->AddActor(&mouse);
     p.stage->AddActor(&target);
 
@@ -127,8 +128,9 @@ public:
 
   // NOTE: a Scene's OnUpdate Method is called each Cycle
   void OnUpdate(Theater::Play p) {
+
     if (p.mouseReleased > 0 && mouse.isCollidingWithRect(&target)) {
-      // if the target is clicked => change the Targets Position to a random
+      // if the target was clicked => change the Targets Position to a random
       // location
 
       Vector2 pos = {
@@ -145,7 +147,7 @@ public:
 };
 
 //==============================================================================
-// NOTE: Finally, let's use the Main-Scene to Build the Stage and start
+// NOTE: Finally, let's use the Main-Function to Build the Stage and start
 // playing the Scene
 //
 // BM: Mouse
