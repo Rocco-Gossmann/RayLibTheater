@@ -131,10 +131,15 @@ int main() {
   - [Theater::Stage](./docs/stage.md)
     Provided through Theater::Play and is used to Add, Read, Remove or Modify Actors on the Stage.
 
+- Theater::Scene [!todo]
+   - Scene-Transitions / Switching Application-States
+
 - Theater::Actor [!todo]
-  - [Comontents](./docs/components.md)
+  - [Components](./docs/components.md)
   - Attributes [!todo]
   - Theater::Collisions [!todo]
+
+
 
 # Advanced Techniques (Pre-Compiler Magic)
 
