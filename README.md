@@ -119,7 +119,17 @@ int main() {
 }
 ```
 
-[!todo]
+# Documentation
+
+- Theater::Builder [!todo]
+
+- Theater::Scene [!todo]
+
+- [Theater::Play](./docs/play.md)
+  Is proveded to The Scene and All Actors while the Scene is running.
+
+  - [Theater::Stage](./docs/stage.md)
+    Provided through Theater::Play and is used to Add, Read, Remove or Modify Actors on the Stage.
 
 # Advanced Techniques (Pre-Compiler Magic)
 
