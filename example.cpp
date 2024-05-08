@@ -73,6 +73,7 @@ public:
   Target()
       : Theater::Actor(), Theater::Transform2D(this), Theater::Visible(this) {}
 
+private:
   // BM: Target - Implement ColliderRect
   //---------------------------------------------------------------------------
   // NOTE: Implementing getRect from Theater::ColliderRect
