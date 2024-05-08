@@ -1,14 +1,9 @@
----
-id: actors
-aliases: []
-tags: []
----
-
 # Actors
 
 An Actor can be any class, that implements the `Theater::Actor` interface.
 
 # Example
+
 ```cpp
 #include "RayTheater.h"
 #include <ralib.h>
@@ -16,9 +11,9 @@ An Actor can be any class, that implements the `Theater::Actor` interface.
 using namespace Theater;
 
 class Mouse : public Actor {
-  
+
 public:
-  // Constructor 
+  // Constructor
   Mouse() : Actor() {}
 
 private:
@@ -32,11 +27,10 @@ private:
 
 # Adding Components
 
-To add Components, RayTheater makes use of C++ ability to use Multiple Inheritance.  
-Each component must be given the ` this ` in the Constructor.
+To add Components, RayTheater makes use of C++ ability to use Multiple Inheritance.
+Each component must be given the `this` in the Constructor.
 
-So to allow the Above Actor to become visible on the Stage, we can add the 
-` Theater::Visible ` component.
+So to allow the Above Actor to become visible on the Stage, we can add the `Theater::Visible` component.
 
 ```cpp
 #include "RayTheater.h"
@@ -45,15 +39,16 @@ So to allow the Above Actor to become visible on the Stage, we can add the
 using namespace Theater;
 
 class Mouse : public Actor, public Visible {
-  
+
 public:
-  // Constructor 
+  // Constructor
   Mouse() : Actor(), Visible(this) {}
   // ...
 };
 ```
 
-From there, the Actors exposes a new Methods, for others to use.
+From there, the Actors gains and exposes a new Method, for others or itself to use.
+
 ```cpp
 #include "RayTheater.h"
 #include <ralib.h>
@@ -61,12 +56,12 @@ From there, the Actors exposes a new Methods, for others to use.
 using namespace Theater;
 
 class Mouse : public Actor, public Visible {
-  
+
 public:
   // ...
   /**
    * @brief Sets what elements are drawn above which other
-   * actors with higher numbers will be drawn above elements with lower numbers
+   * actors with higher numbers will be drawn above actors with lower numbers
    * Should 2 elements have the same number, there draw order
    * depends on the order, in which they were made visible
    *
@@ -77,8 +72,7 @@ public:
 };
 ```
 
-It also receives a new Event-Handler, that gets triggered, when ever the Stage
-is Drawn.
+It also receives a new Event-Handler, that gets triggered, when ever the Stage is Drawn.
 
 ```cpp
 #include "RayTheater.h"
@@ -87,7 +81,7 @@ is Drawn.
 using namespace Theater;
 
 class Mouse : public Actor, public Visible {
-  
+
 private:
   // ...
   void OnDraw(Play p) override {};
@@ -99,17 +93,20 @@ private:
 RayTheater makes use of RayLib for interacting with the rest of your Computer.
 Therefore all functions provided by it are also Available to the Actor.
 
-That is also, why you can't load Ressources inside the Constructor, Because RayLib
+That is also, why you can't load Ressources inside the Constructor, because RayLib
 needs to construct the Stage first.
 
 This is where the Actors
+
 ```cpp
   virtual void OnStageEnter(Play);
   virtual void OnStageLeave(Play);
 ```
+
 methods come into play.
 
-Lets update the Actor above to load a cursor Graphic and render it, 
+Lets update the Actor above to load a cursor Graphic and render it,
+
 ```cpp
 #include "RayTheater.h"
 #include <ralib.h>
@@ -128,7 +125,7 @@ private:
 
   // Loading the image as soon, as the Actor is added to the Stage.
   void OnStageEnter(Play p) override {
-    gfx = LoadTexture("./assets/cursor.png"); // RayLib function 
+    gfx = LoadTexture("./assets/cursor.png"); // RayLib function
 
     // Tell the Stage, that the Actor is ready to be rendered
     p.stage->MakeActorVisible(this);
@@ -137,11 +134,10 @@ private:
 
   // Once the Actor is removed from the Stage, we can free the Ressource
   void OnStageLeave(Play p) override {
-    UnloadTexture(gfx); // RayLib function 
-
+    UnloadTexture(gfx); // RayLib function
   }
 
-  // Then we can implement the Theater::Visible Interface to draw the cursor
+  // Then we can implement the Theater::Visible Interfaces  Hook to draw the cursor
   void OnDraw(Play p) override {
     // If the Cursor is inside the Stage
     if (p.mouseX > 0 && p.mouseY > 0 && p.mouseX < p.stageWidth &&
@@ -152,5 +148,5 @@ private:
     }
 
   }
-};  
+};
 ```
