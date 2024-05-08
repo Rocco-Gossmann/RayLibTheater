@@ -1,3 +1,7 @@
 build
 RayWrapC.run
 debug.run
+
+.clangd
+Makefile
+workspace.tmux
