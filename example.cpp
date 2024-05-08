@@ -1,8 +1,8 @@
 #include "RayTheater.hpp"
-#include "raylib.h"
 #include <climits>
 #include <cstdlib>
 #include <ctime>
+#include <raylib.h>
 
 //==============================================================================
 // NOTE: First lets create an actor to play the Mouse
