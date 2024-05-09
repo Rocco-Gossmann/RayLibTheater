@@ -17,7 +17,8 @@ class Mouse : public Theater::Actor,
               public Theater::ColliderPoint {
 
 public:
-  Mouse() : Theater::Actor(), Theater::Visible(this) {
+  Mouse()
+      : Theater::Actor(), Theater::Visible(this), Theater::ColliderPoint(this) {
     // to make sure the cursor is drawn above everything,
     // give it the highest possible Render-Layer
     this->SetRenderLayer(INT_MAX);
@@ -71,7 +72,8 @@ class Target : public Theater::Actor,
                public Theater::Transform2D {
 public:
   Target()
-      : Theater::Actor(), Theater::Transform2D(this), Theater::Visible(this) {}
+      : Theater::Actor(), Theater::Transform2D(this), Theater::Visible(this),
+        Theater::ColliderRect(this) {}
 
 private:
   // BM: Target - Implement ColliderRect
