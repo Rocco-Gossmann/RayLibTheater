@@ -19,16 +19,19 @@ The stage can be accessed via the [`Theater::Play`s](./play.md) `stage` proppert
   OnWindowDraw(Play)
   OnTick(Play)
 ```
+
 Methods.
 
 It is also part of the Events fired to Actors, that enter or leave the Stage:
+
 ```c++
   OnStageEnter(Play)
   OnStageLeave(Play)
 ```
+
 # Accessable Functions
 
-```cpp
+```c++
 class Theater::Stage {
   /**
    * @brief Changes the Color of the Border, that is show, when the window is
@@ -103,19 +106,3 @@ class Theater::Stage {
 
 }
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

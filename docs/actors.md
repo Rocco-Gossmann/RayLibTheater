@@ -4,7 +4,7 @@ An Actor can be any class, that implements the `Theater::Actor` interface.
 
 # Example
 
-```cpp
+```c++
 #include "RayTheater.h"
 #include <ralib.h>
 
@@ -32,7 +32,7 @@ Each component must be given the `this` in the Constructor.
 
 So to allow the Above Actor to become visible on the Stage, we can add the `Theater::Visible` component.
 
-```cpp
+```c++
 #include "RayTheater.h"
 #include <ralib.h>
 
@@ -49,7 +49,7 @@ public:
 
 From there, the Actors gains and exposes a new Method, for others or itself to use.
 
-```cpp
+```c++
 #include "RayTheater.h"
 #include <ralib.h>
 
@@ -74,7 +74,7 @@ public:
 
 It also receives a new Event-Handler, that gets triggered, when ever the Stage is Drawn.
 
-```cpp
+```c++
 #include "RayTheater.h"
 #include <ralib.h>
 
@@ -98,7 +98,7 @@ needs to construct the Stage first.
 
 This is where the Actors
 
-```cpp
+```c++
   virtual void OnStageEnter(Play);
   virtual void OnStageLeave(Play);
 ```
@@ -107,7 +107,7 @@ methods come into play.
 
 Lets update the Actor above to load a cursor Graphic and render it,
 
-```cpp
+```c++
 #include "RayTheater.h"
 #include <ralib.h>
 

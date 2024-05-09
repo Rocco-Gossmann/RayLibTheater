@@ -34,7 +34,7 @@ The Setup-Process is pretty much inspired by the
 
 1.) Include the File
 
-```cpp
+```c++
 #include "RayTheater.hpp"
 
 int main() {
@@ -43,7 +43,7 @@ int main() {
 
 2.) define a Scene.
 
-```cpp
+```c++
 #include "RayTheater.hpp"
 // Since RayTheater is just a RayLib addon, you can
 // Raylib needs to be installed as well
@@ -70,7 +70,7 @@ int main() {
 
 3.) Build the Stage and Play the Scene in your `main` - function
 
-```cpp
+```c++
 
 #include "RayTheater.hpp"
 #include <raylib.h>
@@ -96,7 +96,7 @@ int main() {
 
 Here is the full version of that code. You can just copy and paste it into your main.cpp, to check if your project setup works.
 
-```cpp
+```c++
 
 #include "RayTheater.hpp"
 #include <raylib.h>
