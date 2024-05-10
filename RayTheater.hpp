@@ -972,7 +972,6 @@ template <typename T> inline void Stage::ClearActorFromStage(T *a) {
     auto actorVis = a->_attributes.find(VISIBLE);
     if (actorVis != a->_attributes.end()) {
       MakeActorInvisible((Visible *)a);
-      int idx = ((Visible *)a)->_renderListIndex;
     }
   }
 
@@ -1050,7 +1049,6 @@ public:
 
     auto connectDots = [](std::vector<Vector2> *dots, int d1, int d2,
                           Vector2 point) {
-      unsigned int ret = 0;
 
       auto pos1 = dots->at(d1);
       auto pos2 = dots->at(d2);
@@ -1073,7 +1071,6 @@ public:
             fmax(0, fmin(lineL, (lineX * circleX + lineY * circleY))) / lineL;
 
         float offsetX = pos1.x + ((pos2.x - pos1.x) * t);
-        float offsetY = pos1.y + ((pos2.y - pos1.y) * t);
 
         return offsetX > point.x ? 1 : 0;
       };
