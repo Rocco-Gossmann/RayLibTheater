@@ -8,7 +8,6 @@ Like:
 - Switching between different Application-States / Views.
 - Handeling Entities / Entity Components
 
----
 
 # Why does this exists?
 
@@ -29,6 +28,14 @@ That is it. No further steps needed.
 The Setup-Process is pretty much inspired by the
 **OneLoneCoder PixelGameEngine** (https://github.com/OneLoneCoder/olcPixelGameEngine)
 (Always loved how simple it is to integrate into existing projects, so I wanted to mimik that)
+
+# Compiler Flags
+
+All you need is at least C++11 and the IncludePath to your RayTheater.hpp.
+
+```
+-std=c++11 -I/Path/To/Your/RayTheaterHPP
+```
 
 # How to use it in Code.
 
@@ -132,15 +139,13 @@ int main() {
     Provided through Theater::Play and is used to Add, Read, Remove or Modify Actors on the Stage.
 
 - Theater::Scene [!todo]
-   - Scene-Transitions / Switching Application-States
+
+  - Scene-Transitions / Switching Application-States
 
 - Theater::Actor [!todo]
   - [Components](./docs/components.md)
   - Attributes [!todo]
-  - Theater::Collisions [!todo]
-
-
-
+  - [Theater::Colliders](./docs/components.md#collider---components)
 # Advanced Techniques (Pre-Compiler Magic)
 
 - [Custom-Attributes](./docs/custom_attributes.md)
