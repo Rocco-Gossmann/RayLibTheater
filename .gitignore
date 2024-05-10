@@ -3,5 +3,5 @@ RayWrapC.run
 debug.run
 
 .clangd
-Makefile
 workspace.tmux
+release.run
