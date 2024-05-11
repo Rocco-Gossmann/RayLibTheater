@@ -297,6 +297,13 @@ public:
    */
   template <typename T> void RemoveActor(T *a);
 
+  /** @brief Pauses all Ticking Actors */
+  void Pause();
+
+  /**  @brief Continues to run all Ticking Actors */
+  void UnPause();
+
+
   /**
    * @brief By default Actors are invisible / Not rendered
    * use this function to make it visible (Add it to the Stages render-list)
@@ -363,6 +370,7 @@ private:
 
   bool _rendering;
   bool _sceneUnloading;
+  bool _tickingPaused;
 
   std::unordered_set<Actor *> _actorsToClear;
   std::unordered_set<Ticking *> _handle_TICKING;
@@ -464,7 +472,7 @@ inline Stage::Stage(int width, int height, float scale)
       _borderColor(Color{0x00, 0x88, 0xff, 0xff}), _handle_TICKING(),
       _handle_DEAD(), _handle_TRANSFORMABLE(), _stageScale(scale),
       _actorsToClear(), _stageTitle("< RayWrapC - Project >"), _renderNodes(),
-      _rendering(false) {
+      _rendering(false), _tickingPaused(false) {
 
   static_assert(ACTORLIMIT > 0, "Set ACTORLIMIT must be bigger than 0");
 
@@ -571,8 +579,9 @@ inline void Stage::Play(Scene *sc) {
     _play.mouseReleased &= _play.mouseUp;
 
     // Tick all the actors
-    for (Ticking *ticker : _handle_TICKING)
-      ticker->OnTick(_play);
+    if(!_tickingPaused)
+      for (Ticking *ticker : _handle_TICKING)
+        ticker->OnTick(_play);
 
     // Figure out the Render order of actors;
     int rnCnt = _renderNodeCnt;
@@ -641,6 +650,9 @@ inline void Stage::Play(Scene *sc) {
   ClearStage();
   UnloadRenderTexture(_stage);
 }
+
+inline void Stage::Pause() { _tickingPaused = true; }
+inline void Stage::UnPause() { _tickingPaused = false; }
 
 inline void Stage::switchScene(Scene *sc) {
   _sceneUnloading = true;
