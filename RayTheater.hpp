@@ -196,7 +196,7 @@ public:
   Ticking(Actor *ac) : ActorComponent(ac, TICKING) {}
 
 private:
-  virtual bool OnTick(Play) = 0;
+  virtual void OnTick(Play) = 0;
 };
 
 //==============================================================================
