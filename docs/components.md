@@ -33,6 +33,11 @@ private:
         /* ... Call some RayLib function to draw this */
     };
 
+    // Implement Theater::Actor
+    void OnStageEnter(Theater::Play p) override {
+        p.stage->MakeActorVisible(this);
+    }
+
 }
 ```
 
@@ -75,6 +80,61 @@ private:
         /* ... Call some RayLib function to draw this */
     };
 ```
+
+4.) make the Mouse is visible as soon as it is added to the Stage. For that we can override the optional ` OnStageEnter ` Hook of the Actor-Class. 
+```c++
+// Implement Theater::Actor
+void OnStageEnter(Theater::Play p) override {
+    p.stage->MakeActorVisible(this);
+}
+```
+
+# Visible - Component
+
+As shown in the beginning example, this component is needed, to render an Actor on the Stage.
+
+Actors are not visible by default to make an Actor with a Visible - Component visible or invisible on the Stage, you need to call the Stages methods.
+```c++
+  bool MakeActorVisible(Theater::Visible *);
+  // and 
+  void MakeActorInvisible(Theater::Visible *);
+```
+
+### virtual Methods:
+```c++
+/** @brief called, once it is time to render the Actor to the Screen
+ * Within OnDraw, you are drawing on the Stage. 
+ * The stages Pixel-Dimensions are provided via:
+ * 
+ * @param p - Contains meta data about the Stage and current User-Inputs
+ */
+void OnDraw(Theater::Play p) override;
+```
+
+# Ticking - Component
+
+A Ticking - Component is invoked every cycle (similar to a visible [Visible - Component](#visible---component) )
+The Playback of a Ticking - Component  can be Paused and Continued via the following [Stage's](./stage.md) Methods 
+
+```c++
+  bool Pause();
+  // and 
+  void UnPause();
+```
+
+### virtual Methods:
+```c++
+/** @brief called, Each cycle, as long as the Scene is not Paused
+ * @param p - Contains meta data about the Stage and current User-Inputs
+ */
+void OnTick(Theater::Play p) override;
+```
+
+# Transform2D - Component
+[!WIP]
+
+This component provides a set 
+
 
 # Collider - Components
 

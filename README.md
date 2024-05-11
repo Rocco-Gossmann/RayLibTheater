@@ -132,20 +132,25 @@ int main() {
 
 - Theater::Scene [!todo]
 
-- [Theater::Play](./docs/play.md)
+- [Theater::Play](./docs/play.md)   
   Is proveded to The Scene and All Actors while the Scene is running.
 
-  - [Theater::Stage](./docs/stage.md)
+  - [Theater::Stage](./docs/stage.md)  
     Provided through Theater::Play and is used to Add, Read, Remove or Modify Actors on the Stage.
 
 - Theater::Scene [!todo]
-
   - Scene-Transitions / Switching Application-States
 
 - Theater::Actor [!todo]
   - [Components](./docs/components.md)
+
+
+      - [Theater::Colliders](./docs/components.md#collider---components)
+        Components, that describe an Actors shape for the Collision check.
+
   - Attributes [!todo]
-  - [Theater::Colliders](./docs/components.md#collider---components)
+
+
 # Advanced Techniques (Pre-Compiler Magic)
 
 - [Custom-Attributes](./docs/custom_attributes.md)

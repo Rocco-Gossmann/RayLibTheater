@@ -1,16 +1,10 @@
----
-id: stage
-aliases: []
-tags: []
----
-
 # Theater::Stage
 
 The Stages primary purpouse is to proved access to all Actors currently active on the Stage.
 
 # Access during Runtime
 
-The stage can be accessed via the [`Theater::Play`s](./play.md) `stage` propperty given to any of a Scenes
+The stage can be accessed via the [`Theater::Play`s](./play.md) `stage` propperty given to any of a [Scenes](./scenes.md)
 
 ```C++
   void OnStart(Thater::Play p)
