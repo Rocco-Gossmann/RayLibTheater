@@ -1,9 +1,3 @@
----
-id: ui
-aliases: []
-tags: []
----
-
 # RayTheater - UI
 
 This Addition adds a bunch of Actors, that can become UI-Elements on your Stage.

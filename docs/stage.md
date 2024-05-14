@@ -27,6 +27,13 @@ It is also part of the Events fired to Actors, that enter or leave the Stage:
 
 ```c++
 class Theater::Stage {
+
+  /** @brief Pauses all Ticking Actors */
+  void Pause();
+
+  /**  @brief Continues to run all Ticking Actors */
+  void UnPause();
+
   /**
    * @brief Changes the Color of the Border, that is show, when the window is
    * scaled to an aspect ratio different, than the Stages

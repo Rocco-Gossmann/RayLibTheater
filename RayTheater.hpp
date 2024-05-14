@@ -30,7 +30,7 @@ class Stage; // <== "needed by some classes before Stage is defined
 class ActorComponent;
 
 //=============================================================================
-// BM: Stage::Attributes
+// BM: Attributes - Enum
 //=============================================================================
 enum Attributes {
 #ifdef STAGE_ATTRIBUTE
@@ -51,7 +51,7 @@ enum Attributes {
 };
 
 //==============================================================================
-// BM: RenderList
+// BM: RenderNode - Struct
 //==============================================================================
 template <typename T> struct RenderNode {
   int index;
