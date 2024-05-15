@@ -1,5 +1,5 @@
 #ifndef RAYTHEATER_H
-#define RAYTHEATER_H
+#define RAYTHEATER_H 1
 
 #include <climits>
 #include <cmath>
@@ -1431,4 +1431,5 @@ inline bool ColliderZone::isCollidingWithZone(ColliderZone *z) {
 }
 
 }; // namespace Theater
-#endif // 0
+
+#endif // RAYTHEATER_H

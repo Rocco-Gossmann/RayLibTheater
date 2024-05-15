@@ -32,9 +32,9 @@ The Setup-Process is pretty much inspired by the
 # Compiler Flags
 
 All you need is at least C++11 and the IncludePath to your RayTheater.hpp.
-
+Since this is using RayLib, you obviously also need ot add flags to that lib and headers as well.
 ```
--std=c++11 -I/Path/To/Your/RayTheaterHPP
+-std=c++11 -I/Path/To/Your/RayTheaterHPP -L/Path/To/RayLib/Lib -I/PathToRayLib/Headers -lraylib
 ```
 
 # How to use it in Code.
