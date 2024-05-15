@@ -1,3 +1,9 @@
+---
+id: scenes
+aliases: []
+tags: []
+---
+
 # Theater::Scene
 
 scenes are classes, that Inherit from the ` Theater::Scene ` base class.
@@ -14,7 +20,7 @@ void TransitionTo(Theater::Scene *s)
 This will transition to the next given Scene ` s `.
 
 You can also pass in ` NULL ` / ` nullptr ` / ` 0 `.
-This will Unload the current Scene and then Exit the Application.
+This will Unload the current Scene and then exit the Application.
 
 So to end the Application, use
 ```c++
@@ -40,7 +46,7 @@ This is, where you add your Actors to the [Stage](./stage.md).
 void OnEnd(Theater::Play p) override
 ```
 Is called once after [Transition](#scenetransitionto) was requested.
-You should use this function to Remove Actors and free Ressources that where added during [OnStart](#sceneonstart) and [OnUpdate](#sceneonupdate).
+You should use this function to remove Actors and free Ressources that where added during [OnStart](#sceneonstart) and [OnUpdate](#sceneonupdate).
 
 
 ## Scene::OnUpdate
@@ -48,7 +54,7 @@ You should use this function to Remove Actors and free Ressources that where add
 void OnUpdate(Theater::Play p) override
 ```
 This method is called each cycle.
-Should the Stages playback be paused (via [Pause](./stage.md#accessable-functions)). This is the place, where you can `UnPause` the stage again.
+Should the [Stages](./stage.md) playback be paused (via [Pause](./stage.md#accessable-functions)). This is the place, where you can `UnPause` the stage again.
 
 > [!CAUTION]  
 > If you call any of Raylib's Draw methods in here, they won't have any effect
@@ -67,7 +73,7 @@ The width and height of drawing area are defined by ` p.stageWidth ` and ` p.sta
 ```c++
 void OnWindowDraw(Theater::Play p) override
 ```
-This is similar to [OnStageDraw](#sceneonstagedraw), you are drawing directly to the window instead. No so scaling, no limitation.
+This is similar to [OnStageDraw](#sceneonstagedraw), you are drawing directly to the window instead. No scaling, no limitation.
 The point 0,0 is the top left cornor of the Window.
 No Scaling is applied to things Drawn in side this function.
 
