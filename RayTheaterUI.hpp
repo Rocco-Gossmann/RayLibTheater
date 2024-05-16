@@ -53,11 +53,11 @@ public:
 
   struct UIStyle {
     Color textColor = WHITE;
+    Font font = GetFontDefault();
+    float fontSize = 10;
+
     Color backgroundColor = GRAY;
     Vector2 labelOffset = {2, 2};
-    float labelFontSize = 10;
-    Font font = GetFontDefault();
-
     float cornorRadius = .25;
 
     bool roundTL = true;
@@ -121,7 +121,7 @@ public:
 
   // Implement - Tickable
   //------------------------------------------------------------------------------
-  bool OnTick(Play) override;
+  void OnTick(Play) override;
 
   // Implement - Actor
   //------------------------------------------------------------------------------
@@ -135,7 +135,7 @@ public:
 static Button::UIStyle defaultButtonStyle = {};
 
 inline Button::Button(int id, float x, float y, float w, float h)
-    : Actor(), Visible(this), Ticking(this), _drawRect({x, y, w, h}), _id(id),
+    : Actor(), ColliderRect(this), Visible(this), Ticking(this), _drawRect({x, y, w, h}), _id(id),
       _label(std::to_string(id)), _state(STATE_IDLE),
       _style(&defaultButtonStyle), _srcRect({0, 0, w, -h}),
       _textOrigin({0, 0}) {}
@@ -200,7 +200,7 @@ inline void Button::rerender() {
        _style->textColor.b) > 0 &&
       this->_label.size() > 0)
     DrawTextPro(_style->font, _label.c_str(), this->_style->labelOffset, {0, 0},
-                0, _style->labelFontSize, 1, _style->textColor);
+                0, _style->fontSize, 1, _style->textColor);
 
   EndTextureMode();
 }
@@ -211,7 +211,7 @@ inline void Button::OnDraw(Play p) {
   DrawTexturePro(_texture.texture, _srcRect, _drawRect, _textOrigin, 0, WHITE);
 }
 
-inline bool Button::OnTick(Play p) {
+inline void Button::OnTick(Play p) {
 
   if (containsPoint(p.mouseX, p.mouseY)) {
 
@@ -256,8 +256,6 @@ inline bool Button::OnTick(Play p) {
       break;
     }
   }
-
-  return true;
 }
 
 inline void Button::OnStageEnter(Play p) {
