@@ -1,9 +1,3 @@
----
-id: button
-aliases: []
-tags: []
----
-
 # RayTheater - UI - Button
 
 Buttons are Elements, that can be interacted with, via a Mouse, Touchscreen or other Pointer devices.
@@ -50,18 +44,18 @@ public:
 
 ## Handeling Events / Clicks
 
-All events are handled through a Lamda function, that has the following Format.
+All events are handled through a Lambda function, that has the following Format.
 
 ```c++
 void(int, ButtonEvent, Button *)
 ```
 
-You register the Lamda function via various `On...` methods on the Button Instances.
+You register the Lambda function via various `On...` methods on the Button Instances.
 
 ### Event-Types:
 
 | Event   | Method      | EventType     | Description                                                                 |
-| ------- | ----------- | ------------- | --------------------------------------------------------------------------- |
+|---------|-------------|---------------|-----------------------------------------------------------------------------|
 | Hover   | `OnHover`   | `BTN_HOVER`   | Called as soon as the Mouse is over the Button, but not pressed             |
 | Press   | `OnPress`   | `BTN_PRESS`   | Called during the Cycle, the Button is first pressed                        |
 | Hold    | `OnHold`    | `BTN_HOLD`    | Called during each extra Cycle that the Mouse is held down                  |
@@ -69,9 +63,9 @@ You register the Lamda function via various `On...` methods on the Button Instan
 | Out     | `OnOut`     | `BTN_OUT`     | Called when the Mouse-Cursor leaves the button while it was pressed or held |
 
 For ease of use, there is also the `OnEvent` Method, that registers the given
-Lamda function for all Events of a Button.
+Lambda function for all Events of a Button.
 
-To Remove an Event-Handler simple call it's method with a `NULL`/`nullptr`/`0x0` value.
+To Remove an Event-Handler just call it's method with a `NULL`/`nullptr`/`0x0` value.
 
 All Setters can be chained.
 
@@ -109,4 +103,4 @@ Button* Style(Theater::UI::Button::UIStyle*)
 
 Setter Method.
 
-The Buttons appearance can be modified via UIStyle
+The Buttons appearance can be modified via [UIStyle](./style.md)
