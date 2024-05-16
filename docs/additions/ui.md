@@ -17,6 +17,7 @@ using namespace Theater::UI;
 ## Provided Elements
 
 - [Buttons](./ui/button.md)
+- [Labels](./ui/label.md)
 
 ## Additional functions
 
