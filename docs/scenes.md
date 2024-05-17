@@ -1,9 +1,3 @@
----
-id: scenes
-aliases: []
-tags: []
----
-
 # Theater::Scene
 
 scenes are classes, that Inherit from the ` Theater::Scene ` base class.

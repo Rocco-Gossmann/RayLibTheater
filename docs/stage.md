@@ -1,9 +1,3 @@
----
-id: stage
-aliases: []
-tags: []
----
-
 # Theater::Stage
 
 The Stages primary purpouse is to proved access to all Actors currently active on the Stage.

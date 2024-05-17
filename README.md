@@ -128,10 +128,11 @@ int main() {
 
 # Documentation
 
-- Theater::Builder [!todo]
+- [Theater::Builder](./docs/builder.md)  
+  the entry point to your application.
 
 - [Theater::Scene](./docs/scenes.md)  
-is used to set up the Stage and keep track of things like Win/Loose conditions and such.
+  is used to manage various actors within the application.
 
 - [Theater::Play](./docs/play.md)   
   Is proveded to The Scene and All Actors while the Scene is running.
@@ -139,12 +140,22 @@ is used to set up the Stage and keep track of things like Win/Loose conditions a
   - [Theater::Stage](./docs/stage.md)  
     Provided through Theater::Play and is used to Add, Read, Remove or Modify Actors on the Stage.
 
-- Theater::Actor [!todo]
+- [Theater::Actor](./docs/actors.md)  
+  These are the small entities that make up your Application
+
   - [Components](./docs/components.md)
-
-
-      - [Theater::Colliders](./docs/components.md#collider---components)
+      - [Theater::Colliders](./docs/components.md#collider---components)  
         Components, that describe an Actors shape for the Collision check.
+
+      - [Theater::Visible](./docs/components.md#visible---component)  
+        Allows an Actor to visually show up on the stage.
+
+      - [Theater::Ticking](./docs/components.md#ticking---component)  
+        Allows an Actor to interact with the stage, even when not visible.
+        
+      - [Theater::Transform2D](./docs/components.md#transform2d---component)  
+        [!todo]
+        Allows other Actors or the Scene to manipulate the actors positioning on the stage.
 
   - Attributes [!todo]
 

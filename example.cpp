@@ -10,7 +10,7 @@
 // Since it needs to interact with other elements, we need to describe
 // its shape for the collision. We use ColliderPoint for that.
 //
-// BM: Mouse
+// BM: Mouse Actor
 //==============================================================================
 class Mouse : public Theater::Actor,
               public Theater::Visible,
@@ -28,7 +28,7 @@ private:
   Vector2 _pos;
   bool _click;
 
-  // BM: Mouse - Implement Actor
+  // BM: Mouse Actor - Implement Actor
   //---------------------------------------------------------------------------
   void OnStageEnter(Theater::Play p) {
     // Make mouse visible, as soon as it enters the stage
@@ -43,14 +43,14 @@ private:
     p.stage->MakeActorInvisible(this);
   }
 
-  // BM: Mouse - Implement Visible
+  // BM: Mouse Actor - Implement Visible
   void OnDraw(Theater::Play p) {
     _pos = p.mouseLoc;
     _click = p.mouseDown > 0;
     DrawRectangle(p.mouseX - 4, p.mouseY - 4, 8, 8, RED);
   }
 
-  // BM: Mouse - Implement ColliderPoint
+  // BM: Mouse Actor - Implement ColliderPoint
   Vector2 getPosition() { return _pos; }
 };
 
@@ -64,7 +64,7 @@ private:
 // --
 // Of course we need the Visible component, to make it visible on the Stage
 //
-// BM: Exit Button
+// BM: Target Actor - Class
 //==============================================================================
 class Target : public Theater::Actor,
                public Theater::Visible,
@@ -76,7 +76,7 @@ public:
         Theater::ColliderRect(this) {}
 
 private:
-  // BM: Target - Implement ColliderRect
+  // BM: Target Actor - Implement ColliderRect
   //---------------------------------------------------------------------------
   // NOTE: Implementing getRect from Theater::ColliderRect
   // this will also be used to define where to draw the Rect
@@ -85,7 +85,7 @@ private:
     return {pos.x, pos.y, 32, 32};
   }
 
-  // BM: Target - Implement Visible
+  // BM: Target Actor - Implement Visible
   //---------------------------------------------------------------------------
   // NOTE: To draw the target, we can use the CollisionRects coordinates and
   // size
