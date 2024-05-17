@@ -7,11 +7,11 @@ The Stages primary purpouse is to proved access to all Actors currently active o
 The stage can be accessed via the [`Theater::Play`s](./play.md) `stage` propperty given to any of a [Scenes](./scenes.md)
 
 ```c++
-void OnStart(Thater::Play p)
-void OnUpdate(Thater::Play p)
-void OnStageDraw(Thater::Play p)
-void OnWindowDraw(Thater::Play p)
-void OnEnd(Thater::Play p)
+void OnStart(Thater::Play p);
+void OnUpdate(Thater::Play p);
+void OnStageDraw(Thater::Play p);
+void OnWindowDraw(Thater::Play p);
+void OnEnd(Thater::Play p);
 ```
 
 Methods.
@@ -19,8 +19,8 @@ Methods.
 It is also part of the Events fired to Actors, that enter or leave the Stage:
 
 ```c++
-void OnStageEnter(Play)
-void OnStageLeave(Play)
+void OnStageEnter(Play);
+void OnStageLeave(Play);
 ```
 
 # Accessable Functions
