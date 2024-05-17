@@ -129,7 +129,7 @@ int main() {
 # Documentation
 
 - [Theater::Builder](./docs/builder.md)  
-  the entry point to your application.
+  the entrypoint to your application.
 
 - [Theater::Scene](./docs/scenes.md)  
   is used to manage various actors within the application.
