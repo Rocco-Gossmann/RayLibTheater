@@ -29,7 +29,6 @@ namespace Theater {
 class Stage; // <== "needed by some classes before Stage is defined
 class ActorComponent;
 
-//=============================================================================
 // BM: Attributes - Enum
 //=============================================================================
 enum Attributes {
@@ -50,7 +49,6 @@ enum Attributes {
 #undef STAGE_ATTRIBUTE
 };
 
-//==============================================================================
 // BM: RenderNode - Struct
 //==============================================================================
 template <typename T> struct RenderNode {
@@ -61,7 +59,6 @@ template <typename T> struct RenderNode {
   RenderNode<T> *prev;
 };
 
-//=============================================================================
 // BM: Play - Struct
 //=============================================================================
 /** @brief Context provided to each Actor on the Scene */
@@ -125,9 +122,8 @@ typedef struct Play {
 
 } Play;
 
-//=============================================================================
 // BM: Actor - Class
-//=============================================================================
+//==============================================================================
 class Actor {
   friend class Stage;
   friend ActorComponent;
@@ -146,7 +142,6 @@ private:
   std::unordered_set<Attributes> _attributes;
 };
 
-//==============================================================================
 // BM: ActorComponent - Class
 //==============================================================================
 class ActorComponent {
@@ -156,7 +151,6 @@ public:
   ActorComponent(Actor *ac, Attributes at) { ac->_attributes.insert(at); }
 };
 
-//==============================================================================
 // BM: ActorComponent - Transform2D - Class
 //==============================================================================
 class Transform2D : ActorComponent {
@@ -186,7 +180,6 @@ private:
   }
 };
 
-//==============================================================================
 // BM: ActorComponent - Ticking - Class
 //==============================================================================
 class Ticking : ActorComponent {
@@ -199,7 +192,6 @@ private:
   virtual void OnTick(Play) = 0;
 };
 
-//==============================================================================
 // BM: ActorComponent - Visible - Class
 //==============================================================================
 class Visible : ActorComponent {
@@ -223,7 +215,6 @@ private:
   virtual void OnDraw(Play) = 0;
 };
 
-//=============================================================================
 // BM: Scene - Class
 //=============================================================================
 class Scene {
@@ -259,7 +250,6 @@ private:
   }
 };
 
-//=============================================================================
 // BM: Stage - Class
 //=============================================================================
 class Stage {
@@ -268,28 +258,24 @@ class Stage {
 public:
   ~Stage() { _scene = NULL; }
 
-  /**
-   * @brief Changes the Color of the Border, that is show, when the window is
+  /** @brief Changes the Color of the Border, that is show, when the window is
    * scaled to an aspect ratio different, than the Stages
    */
   void BorderColor(Color);
 
-  /**
-   * @brief Background-Color of the stage. (Each frame, the stage is cleared
+  /** @brief Background-Color of the stage. (Each frame, the stage is cleared
    * to this color.
    */
   void BackgroundColor(Color);
 
-  /**
-   * @brief Registers an Actor as being on the stage
+  /** @brief Registers an Actor as being on the stage
    *
    * @tparam T any class that implement Theater::Actor
    * @param a - reference that the Stage will use to adress the Actor
    */
   template <typename T> void AddActor(T *a);
 
-  /**
-   * @brief Marks any Actor as "DEAD", meaning, it will be removed from the
+  /** @brief Marks any Actor as "DEAD", meaning, it will be removed from the
    * stage between cycles
    *
    * @param a the pointer to the actor to remove (Must be the same value as
@@ -304,8 +290,7 @@ public:
   void UnPause();
 
 
-  /**
-   * @brief By default Actors are invisible / Not rendered
+  /** @brief By default Actors are invisible / Not rendered
    * use this function to make it visible (Add it to the Stages render-list)
    *
    * @tparam T any class that implements Theater::Actor and Theater::Visible
@@ -314,8 +299,7 @@ public:
    */
   template <typename T> bool MakeActorVisible(T *);
 
-  /**
-   * @brief removes any visible Actor from the stages render-list
+  /** @brief removes any visible Actor from the stages render-list
    *
    * @tparam T any class that implements Theater::Visible
    */
@@ -394,7 +378,6 @@ private:
   void ClearStage();
 };
 
-//=============================================================================
 // BM: Builder - Class
 //=============================================================================
 /**
@@ -458,9 +441,8 @@ private:
   Stage _stage;
 };
 
-//==============================================================================
 // BM: Stage - Implementation
-//------------------------------------------------------------------------------
+//==============================================================================
 inline Stage::Stage(int width, int height, float scale)
     : _scene(0x0), _viewportOrigin({0, 0}),
       _stageRect(
@@ -477,7 +459,7 @@ inline Stage::Stage(int width, int height, float scale)
   static_assert(ACTORLIMIT > 0, "Set ACTORLIMIT must be bigger than 0");
 
   // Attributes Initialized
-  //=========================================================================
+  //----------------------------------------------------------------------------
 #define STAGE_ATTRIBUTE(name) _handle_##name = std::unordered_set<Actor *>();
 #if __has_include("RayTheaterAttributes.hpp")
 #include "RayTheaterAttributes.hpp"
@@ -495,7 +477,6 @@ inline Stage::Stage(int width, int height, float scale)
   _renderNodeRoot.index = INT_MIN;
 }
 
-//==============================================================================
 // BM: Stage - Implementation - Play
 //------------------------------------------------------------------------------
 inline void Stage::Play(Scene *sc) {
@@ -707,8 +688,7 @@ template <typename T> inline void Stage::AddActor(T *a) {
   ((Actor *)a)->OnStageEnter(_play);
 }
 
-/**
- * @brief Will remove an Actor from the stage, on the start of the next Cycle
+/** @brief Will remove an Actor from the stage, on the start of the next Cycle
  *
  * @param a - the actor to remove
  */
@@ -724,8 +704,7 @@ template <typename T> inline void Stage::RemoveActor(T *a) {
   }
 }
 
-/**
- * @brief Activates the Rendinger of the actor on the stage
+/** @brief Activates the Rendinger of the actor on the stage
  *
  * Can only execute, when not rendering.
  *
@@ -767,15 +746,6 @@ template <typename T> inline bool Stage::MakeActorVisible(T *actor) {
   return true;
 }
 
-/**
- * @brief Makes sure an actor is no longer visible on stage, but keeps
- * it on the stage.
- *
- * Can only execute, when not rendering.
- *
- * @tparam T  - Any Class extending Theater::Actor and Theater::Visible
- * @param actor - an instance of the A Class extending Theater::Actor and
- */
 template <typename T> inline void Stage::MakeActorInvisible(T *actor) {
   if (this->_rendering)
     return;
