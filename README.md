@@ -166,11 +166,10 @@ int main() {
 
 # Additions
 
-### RayTheaterUI.hpp
-
-Contains predefined Actor-Classes, that can play UI-Components like Buttons, labels, etc.
+## RayTheaterUI.hpp
+Contains predefined Actor-Classes, that can play UI-Components like Buttons and Labels  
 [goto Documentation](./docs/additions/ui.md)
 
-- Adding Buttons (TODO: Document this)
-
-- Defining Default Themes (TODO: Document this)
+- [Buttons](./docs/additions/ui/button.md) 
+- [Labels](./docs/additions/ui/label.md)
+- [Theming/Styling](./docs/additions/ui/style.md)
