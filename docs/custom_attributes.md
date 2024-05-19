@@ -49,7 +49,7 @@ So we need a custom Attribute.
 So somewhere in your compilers `include path`, put a `RayTheaterAttributes.hpp` into it.
 
 Alternatively add the `-Ipath/to/the/folder/containing/RayTheaterAttributes.hpp` Flag
-to your Compiler arguments. (more details on [RayTheaterAttrivute.hpp](./raytheater_attributes_hpp.md))
+to your Compiler arguments. (more details on [RayTheaterAttributes.hpp](./raytheater_attributes_hpp.md))
 
 Now in the `RayTheaterAttributes.hpp` add the following Line.
 
