@@ -132,7 +132,7 @@ public:
 static Button::UIStyle defaultButtonStyle = {};
 
 inline Button::Button(int id, float x, float y, float w, float h)
-    : Actor(), ColliderRect(this), Visible(this), Ticking(this), _drawRect({x, y, w, h}), _id(id),
+    : Actor(), Visible(this), Ticking(this), _drawRect({x, y, w, h}), _id(id),
       _label(std::to_string(id)), _state(STATE_IDLE),
       _style(&defaultButtonStyle), _srcRect({0, 0, w, -h}),
       _textOrigin({0, 0}) {}

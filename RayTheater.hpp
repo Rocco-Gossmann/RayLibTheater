@@ -43,7 +43,7 @@ enum Attributes {
 #endif // __has_include("RayTheaterAttributes.hpp")
 
   STAGE_ATTRIBUTE(TICKING) STAGE_ATTRIBUTE(DEAD) STAGE_ATTRIBUTE(TRANSFORMABLE)
-      STAGE_ATTRIBUTE(VISIBLE) STAGE_ATTRIBUTE(COLLISION)
+      STAGE_ATTRIBUTE(VISIBLE)
 
           __STAGE_ATTRIBUTE_COUNT
 #undef STAGE_ATTRIBUTE
@@ -160,8 +160,17 @@ public:
   Transform2D(Actor *a)
       : ActorComponent(a, TRANSFORMABLE), _loc({0.0f, 0.0f}),
         loc({0.0f, 0.0f}){};
+
+
+  /** @brief privides the Actors location, at the star of the cycle
+   * @return the actors location
+   */
   Vector2 getLoc() { return Vector2(loc); }
 
+  /** @brief Requests the Actor to change its location at the beginning
+   * of the next Cycle
+   * @param l the new Location, the Actor should move to
+   */
   void setLoc(Vector2 l) {
     this->_loc.x = l.x;
     this->_loc.y = l.y;
@@ -363,7 +372,6 @@ private:
 
 #define STAGE_ATTRIBUTE(name) std::unordered_set<Actor *> _handle_##name;
   STAGE_ATTRIBUTE(VISIBLE);
-  STAGE_ATTRIBUTE(COLLISION);
 #if __has_include("RayTheaterAttributes.hpp")
 #include "RayTheaterAttributes.hpp"
 #endif // __has_include("RayTheaterAttributes.hpp")
@@ -464,7 +472,6 @@ inline Stage::Stage(int width, int height, float scale)
 #if __has_include("RayTheaterAttributes.hpp")
 #include "RayTheaterAttributes.hpp"
   STAGE_ATTRIBUTE(VISIBLE);
-  STAGE_ATTRIBUTE(COLLISION)
 #endif // __has_include("RayTheaterAttributes.hpp")
 
 #undef STAGE_ATTRIBUTE
@@ -826,10 +833,6 @@ inline bool Stage::AddActorAttribute(Actor *act, Attributes attr) {
            "The Actors class must instead inherit from Theater::Transform2D"
         << std::endl;
 
-  case COLLISION:
-    std::cout << " Can't assign Internal Attribute 'COLLISION' via "
-                 "AddActorAttribute "
-              << std::endl;
     return false;
 
 #define STAGE_ATTRIBUTE(name)                                                  \
@@ -878,12 +881,6 @@ inline bool Stage::RemoveActorAttribute(Actor *act, Attributes attr) {
               << std::endl;
     return false;
 
-  case COLLISION:
-    std::cout << " Can't remove Internal Attribute 'COLLISION' via "
-                 "RemoveActorAttribute "
-              << std::endl;
-    return false;
-
 #define STAGE_ATTRIBUTE(name)                                                  \
   case name:                                                                   \
     _handle_##name.erase(act);                                                 \
@@ -910,7 +907,6 @@ inline void Stage::ClearStage() {
   STAGE_ATTRIBUTE(DEAD)
   STAGE_ATTRIBUTE(TICKING)
   STAGE_ATTRIBUTE(TRANSFORMABLE)
-  STAGE_ATTRIBUTE(COLLISION)
   STAGE_ATTRIBUTE(VISIBLE)
 
 #if __has_include("RayTheaterAttributes.hpp")
@@ -963,7 +959,6 @@ template <typename T> inline void Stage::ClearActorFromStage(T *a) {
     _handle_##name.erase(act_##name);                                          \
   }
 
-  STAGE_ATTRIBUTE(COLLISION)
   STAGE_ATTRIBUTE(DEAD)
 
 #if __has_include("RayTheaterAttributes.hpp")
@@ -979,7 +974,6 @@ Stage::GetActorsWithAttribute(Attributes attr) {
   case TICKING:
   case TRANSFORMABLE:
   case VISIBLE:
-  case COLLISION:
   case DEAD:
     std::cerr << "can't request Actors for Internal Attributes" << std::endl;
   default:
@@ -1004,7 +998,7 @@ class ColliderCircle;
 class ColliderRect;
 class ColliderZone;
 
-class Collider : public ActorComponent {
+class Collider {
   virtual bool isCollidingWithPoint(ColliderPoint *) = 0;
   virtual bool isCollidingWithRect(ColliderRect *) = 0;
   virtual bool isCollidingWithCircle(ColliderCircle *) = 0;
@@ -1013,7 +1007,6 @@ class Collider : public ActorComponent {
   virtual bool containsPoint(float x, float y) = 0;
 
 public:
-  Collider(Actor *a) : ActorComponent(a, COLLISION) {}
 
   static bool zoneContainsPoint(std::vector<Vector2> *zoneborder,
                                 Vector2 point) {
@@ -1074,7 +1067,6 @@ public:
 //==============================================================================
 class ColliderPoint : public Collider {
 public:
-  ColliderPoint(Actor *a) : Collider(a) {}
 
   // Interface
   //---------------------------------------------------------------------------
@@ -1096,7 +1088,6 @@ public:
 //==============================================================================
 class ColliderRect : public Collider {
 public:
-  ColliderRect(Actor *a) : Collider(a) {}
   // Interface
   //---------------------------------------------------------------------------
   virtual Rectangle getRect() = 0;
@@ -1121,7 +1112,6 @@ private:
 //==============================================================================
 class ColliderCircle : public Collider {
 public:
-  ColliderCircle(Actor *a) : Collider(a) {}
   // Interface
   //---------------------------------------------------------------------------
   virtual Vector2 getPosition() = 0;
@@ -1152,7 +1142,6 @@ private:
 //==============================================================================
 class ColliderZone : public Collider {
 public:
-  ColliderZone(Actor *a) : Collider(a) {}
   // Interface
   //---------------------------------------------------------------------------
   virtual std::vector<Vector2> *getZoneBorder() = 0;
