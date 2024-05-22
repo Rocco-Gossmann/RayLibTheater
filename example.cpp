@@ -1,3 +1,5 @@
+#ifndef DISABLE_RAYTHEATER_EXAMPLE
+
 #include "RayTheater.hpp"
 #include <climits>
 #include <cstdlib>
@@ -164,3 +166,5 @@ int main(int argc, char **argv) {
 
   return 0;
 }
+
+#endif
