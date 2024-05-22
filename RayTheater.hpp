@@ -7,8 +7,6 @@
 #include <cstdlib>
 #include <iostream>
 #include <ostream>
-#include <sys/wait.h>
-#include <type_traits>
 #include <unordered_set>
 
 #include <raylib.h>
