@@ -5,3 +5,5 @@ debug.run
 .clangd
 workspace.tmux
 release.run
+.vscode/c_cpp_properties.json
+.vscode/settings.json

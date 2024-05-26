@@ -52,14 +52,14 @@ int main() {
 
 ```c++
 #include "RayTheater.hpp"
-// Since RayTheater is just a RayLib addon, you can
-// Raylib needs to be installed as well
+// Since RayTheater is just a RayLib addon, you have also
+// access any function that RayLibs provides natively.
 #include <raylib.h>
 
 class MyScene : public Theater::Scene {
 public:
     void OnStageDraw(Theater::Play p) {
-        // Inside any the "...Draw" method of RayTheater,
+        // Inside any of the "...Draw" method of RayTheater,
         // you can use RayLibs native Draw function
         DrawText("Hello World", 8, 8, 20, GREEN);
     }
@@ -95,7 +95,7 @@ int main() {
         2    // Initial Window Scale (2x)
     )
         .Title("RayLib - Window 🎉") // Giving the Window
-        .Play(&ms);
+        .Play((Theater::Scene*)&ms);
 
     return 0;
 }
@@ -120,7 +120,7 @@ int main() {
 
     Theater::Builder(480, 320,  2)
         .Title("RayLib - Window 🎉")
-        .Play(&ms);
+        .Play((Theater::Scene*)&ms);
 
     return 0;
 }
