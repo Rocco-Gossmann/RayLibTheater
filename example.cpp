@@ -1,6 +1,7 @@
 #ifndef DISABLE_RAYTHEATER_EXAMPLE
 
 #include "RayTheater.hpp"
+#include "RayTheaterCollider.hpp"
 #include <climits>
 #include <cstdlib>
 #include <ctime>
@@ -19,8 +20,7 @@ class Mouse : public Theater::Actor,
               public Theater::ColliderPoint {
 
 public:
-  Mouse()
-      : Theater::Actor(), Theater::Visible(this) {
+  Mouse() : Theater::Actor(), Theater::Visible(this) {
     // to make sure the cursor is drawn above everything,
     // give it the highest possible Render-Layer
     this->SetRenderLayer(INT_MAX);

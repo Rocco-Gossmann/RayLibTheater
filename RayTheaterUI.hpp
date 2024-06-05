@@ -1,8 +1,9 @@
+#ifndef RayTheaterUI_H
+#define RayTheaterUI_H 1
+
 #include "raylib.h"
 #include <string>
 #include <type_traits>
-#ifndef RayTheaterUI
-#define RayTheaterUI 1
 
 #include "RayTheater.hpp"
 
