@@ -225,20 +225,21 @@ private:
 
 // BM: Timer - Class
 //==============================================================================
-class CountdownTimer {
+class Timer {
 public:
-  CountdownTimer() noexcept;
-  typedef std::function<void(CountdownTimer *, float passTime, float goalTime)>
+  Timer() noexcept;
+
+  typedef std::function<void(Timer *, float passTime, float goalTime)>
       t_TimerProgressHandler;
 
-  typedef std::function<void(CountdownTimer *)> t_TimerFinishHandler;
+  typedef std::function<void(Timer *)> t_TimerFinishHandler;
 
   /** @brief restarts the timer for the given number of milliseconds */
-  void setStart(int milliseconds);
+  void setStart(float milliseconds);
 
   /** @brief changes the timers target time, but keeps the timer running (think
    * of it as advancing a kitchen timer, without letting it run out first) */
-  void updateGoal(int milliseconds);
+  void updateGoal(float milliseconds);
 
   /** @brief set a handler for processing timer progress
    * @param progressCooldown - min delay between handler calls
@@ -253,10 +254,16 @@ public:
 
 private:
   /** @brief keeps track of that the current timers goal is*/
-  float m_TargetTime;
+  float m_TimerGoal;
 
   /** @brief Milliseconds passed since the timer started */
   float m_TimerValue;
+
+  /** @brief keeps track of that the current timers goal is*/
+  float m_ActiveTimerGoal;
+
+  /** @brief Milliseconds passed since the timer started */
+  float m_ActiveTimerValue;
 
   /** @brief called, once the fimer reaches its target */
   t_TimerFinishHandler m_OnFinish;
@@ -1042,9 +1049,29 @@ Stage::GetActorsWithAttribute(Attributes attr) {
 
 // BM: Timer - Implementation
 //==============================================================================
-inline CountdownTimer::CountdownTimer() noexcept
-    : m_TargetTime(0), m_TimerValue(0), m_OnFinish([](CountdownTimer *t) {}),
-      m_OnProgress([](CountdownTimer *o, float t, float g) {}) {}
+inline Timer::Timer() noexcept
+    : m_TimerGoal(0), m_TimerValue(0), m_ActiveTimerGoal(0),
+      m_ActiveTimerValue(0), m_OnFinish([](Timer *t) {}),
+      m_OnProgress([](Timer *o, float t, float g) {}) {}
+
+inline void Timer::setStart(float millisecs) {
+  m_TimerValue = 0;
+  m_TimerGoal = millisecs;
+}
+
+inline void Timer::updateGoal(float millisecs) { m_TimerGoal = millisecs; }
+
+inline void Timer::onProgress(float progressCooldown,
+                              t_TimerProgressHandler handler) {
+  m_ProgressResolution = progressCooldown;
+  m_OnProgress = handler;
+}
+
+inline void Timer::onFinish(t_TimerFinishHandler handler) {
+  m_OnFinish = handler;
+}
+
+// TODO: Continue here
 
 }; // namespace Theater
 
