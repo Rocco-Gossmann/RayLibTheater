@@ -991,6 +991,7 @@ inline void Stage::ClearStage() {
     a->OnStageLeave(_play);
 
   _actorsToClear.clear();
+  _handle_TIMER.clear();
 
 #define STAGE_ATTRIBUTE(name) _handle_##name.clear();
   STAGE_ATTRIBUTE(DEAD)
@@ -1081,6 +1082,7 @@ Stage::GetActorsWithAttribute(Attributes attr) {
 
 inline void Stage::SetTimer(Timer *t) {
   t->m_TimerValue = 0;
+  t->m_NextProgress = 0;
   _handle_TIMER.insert(t);
 }
 inline void Stage::RemoveTimer(Timer *t) { _handle_TIMER.erase(t); }

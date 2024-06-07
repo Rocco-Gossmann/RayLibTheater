@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <iostream>
 #ifndef DISABLE_RAYTHEATER_EXAMPLE
 
@@ -107,6 +108,7 @@ private:
   Target target;
   Theater::Timer helpTimer;
   bool m_showHelp = false;
+  int m_timerProgress = 0;
 
   // BM: Scene - Implement Scene
 public:
@@ -128,9 +130,17 @@ public:
     // Let's configer a timer to show a helpfull message if the user takes
     // to long to click the target
     helpTimer
-        .setDuration(2000 /* the timer keeps running for 2 Seconds */)
+        .setDuration(5000 /* the timer keeps running for 5 Seconds */)
         // When it finishes it toggles the help message to be visible
-        ->onFinish([this](Theater::Timer *t) { this->m_showHelp = true; });
+        ->onFinish([this](Theater::Timer *t) { this->m_showHelp = true; })
+
+        // We want to keep track of how long the timer has been running for
+        // So we can instruct the timer to call a different function every
+        // 1000ms
+        ->onProgress(1000,
+                     [this](Theater::Timer *t, float progress, float goal) {
+                       m_timerProgress = static_cast<int>(progress);
+                     });
 
     p.stage->SetTimer(&helpTimer);
   }
@@ -170,6 +180,10 @@ public:
     if (m_showHelp) {
       // Draw the help message, if it is visible
       DrawText(" click the green box :-) ", 8, 8, 10, WHITE);
+    } else {
+      char buffer[256];
+      std::snprintf(buffer, 256, "%d", m_timerProgress / 1000);
+      DrawText(buffer, 8, 8, 10, WHITE);
     }
   }
 };
