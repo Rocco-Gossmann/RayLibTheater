@@ -1,3 +1,4 @@
+#include <iostream>
 #ifndef DISABLE_RAYTHEATER_EXAMPLE
 
 #include "RayTheater.hpp"
@@ -104,11 +105,13 @@ class DemoScene : public Theater::Scene {
 private:
   Mouse mouse;
   Target target;
+  Theater::Timer helpTimer;
+  bool m_showHelp = false;
 
   // BM: Scene - Implement Scene
 public:
   // NOTE: a Scene's OnStart Method is called once, before it starts playing
-  void OnStart(Theater::Play p) {
+  void OnStart(Theater::Play p) override {
 
     // We can use it to set up the random number generator
     std::srand(time(NULL));
@@ -121,22 +124,32 @@ public:
     // change its location.
     target.setLoc({160, 120});
     p.stage->MakeActorVisible(&target);
+
+    // Let's configer a timer to show a helpfull message if the user takes
+    // to long to click the target
+    helpTimer
+        .setDuration(2000 /* the timer keeps running for 2 Seconds */)
+        // When it finishes it toggles the help message to be visible
+        ->onFinish([this](Theater::Timer *t) { this->m_showHelp = true; });
+
+    p.stage->SetTimer(&helpTimer);
   }
 
   // NOTE: a Scene's OnEnd Method is called once, after it finished playing
-  // We'll remove our two actors from the Stage here
-  void OnEnd(Theater::Play p) {
+  // We'll remove our two actors and the timer from the Stage
+  void OnEnd(Theater::Play p) override {
     p.stage->RemoveActor(&target);
     p.stage->RemoveActor(&mouse);
+    p.stage->RemoveTimer(&helpTimer);
   }
 
   // NOTE: a Scene's OnUpdate Method is called each Cycle
-  void OnUpdate(Theater::Play p) {
+  void OnUpdate(Theater::Play p) override {
 
     if (p.mouseReleased > 0 && mouse.isCollidingWithRect(&target)) {
+
       // if the target was clicked => change the Targets Position to a random
       // location
-
       Vector2 pos = {
           static_cast<float>((double)(std::rand()) / (double)RAND_MAX) *
               (p.stageWidth - 32),
@@ -144,8 +157,19 @@ public:
               (p.stageHeight - 32)};
 
       std::cout << "pos: " << pos.x << " - " << pos.y << std::endl;
-
       target.setLoc(pos);
+
+      // We'll also reset the HelpMessage and restart the timer for displaying
+      // it
+      m_showHelp = false;
+      p.stage->SetTimer(&helpTimer);
+    }
+  }
+
+  void OnStageDraw(Theater::Play p) override {
+    if (m_showHelp) {
+      // Draw the help message, if it is visible
+      DrawText(" click the green box :-) ", 8, 8, 10, WHITE);
     }
   }
 };

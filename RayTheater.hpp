@@ -234,36 +234,44 @@ public:
 
   typedef std::function<void(Timer *)> t_TimerFinishHandler;
 
+  /** @brief if this function is called, this timer will restart
+   * when ever the it reaches its end (otherwide it is removed from the stage)
+   */
+  Timer *loop();
+
   /** @brief restarts the timer for the given number of milliseconds */
-  void setStart(float milliseconds);
+  Timer *setDuration(float milliseconds);
 
   /** @brief changes the timers target time, but keeps the timer running (think
    * of it as advancing a kitchen timer, without letting it run out first) */
-  void updateGoal(float milliseconds);
+  Timer *updateDuration(float milliseconds);
 
   /** @brief set a handler for processing timer progress
    * @param progressCooldown - min delay between handler calls
    * @param handler - lambda function called on each progress step
    */
-  void onProgress(float progressCooldown, t_TimerProgressHandler handler);
+  Timer *onProgress(float progressCooldown, t_TimerProgressHandler handler);
 
   /** @brief sets the handler to be called, once the timer finished
    * @param handler
    */
-  void onFinish(t_TimerFinishHandler handler);
+  Timer *onFinish(t_TimerFinishHandler handler);
 
 private:
+  /** @brief if true, reset timer to 0 on next stageUpdate */
+  bool m_ResetRequested;
+
   /** @brief keeps track of that the current timers goal is*/
   float m_TimerGoal;
-
-  /** @brief Milliseconds passed since the timer started */
-  float m_TimerValue;
 
   /** @brief keeps track of that the current timers goal is*/
   float m_ActiveTimerGoal;
 
   /** @brief Milliseconds passed since the timer started */
-  float m_ActiveTimerValue;
+  float m_TimerValue;
+
+  /** @brief defines if the timer restarts automatcially */
+  bool m_loop;
 
   /** @brief called, once the fimer reaches its target */
   t_TimerFinishHandler m_OnFinish;
@@ -279,7 +287,7 @@ private:
 
 private:
   friend class Stage;
-  void stageUpdate(Play p);
+  bool stageUpdate(Play p);
 };
 
 // BM: Scene - Class
@@ -396,6 +404,17 @@ public:
    */
   std::unordered_set<Actor *> GetActorsWithAttribute(Attributes attr);
 
+  /** @brief adds a running timer to the stage
+   * @param t - the timer to add
+   */
+  void SetTimer(Timer *t);
+
+  /** @brief used to clean up timers, that were added to the stage
+   * timers that don't loop are removed automatically if they run out.
+   * @param t - the timer to add
+   */
+  void RemoveTimer(Timer *t);
+
 private:
   Stage(int width, int height, float scale = 1.0);
 
@@ -426,6 +445,7 @@ private:
   std::unordered_set<Ticking *> _handle_TICKING;
   std::unordered_set<Transform2D *> _handle_TRANSFORMABLE;
   std::unordered_set<Actor *> _handle_DEAD;
+  std::unordered_set<Timer *> _handle_TIMER;
 
 #define STAGE_ATTRIBUTE(name) std::unordered_set<Actor *> _handle_##name;
   STAGE_ATTRIBUTE(VISIBLE);
@@ -622,6 +642,18 @@ inline void Stage::Play(Scene *sc) {
     _play.mouseHeld &= ~_play.mouseDown;
     _play.mouseUp &= ~(_play.mouseDown | _play.mouseHeld);
     _play.mouseReleased &= _play.mouseUp;
+
+    // Update Timers
+    std::vector<Timer *> cleanupTimers;
+    for (auto t : _handle_TIMER) {
+      if (!t->stageUpdate(_play))
+        cleanupTimers.push_back(t);
+    }
+
+    for (auto t : cleanupTimers)
+      _handle_TIMER.erase(t);
+
+    cleanupTimers.clear();
 
     // Tick all the actors
     if (!_tickingPaused)
@@ -1047,31 +1079,69 @@ Stage::GetActorsWithAttribute(Attributes attr) {
   }
 }
 
+inline void Stage::SetTimer(Timer *t) {
+  t->m_TimerValue = 0;
+  _handle_TIMER.insert(t);
+}
+inline void Stage::RemoveTimer(Timer *t) { _handle_TIMER.erase(t); }
+
 // BM: Timer - Implementation
 //==============================================================================
 inline Timer::Timer() noexcept
     : m_TimerGoal(0), m_TimerValue(0), m_ActiveTimerGoal(0),
-      m_ActiveTimerValue(0), m_OnFinish([](Timer *t) {}),
+      m_ResetRequested(false), m_OnFinish([](Timer *t) {}), m_loop(false),
       m_OnProgress([](Timer *o, float t, float g) {}) {}
 
-inline void Timer::setStart(float millisecs) {
-  m_TimerValue = 0;
-  m_TimerGoal = millisecs;
+inline Timer *Timer::loop() {
+  m_loop = true;
+  return this;
 }
 
-inline void Timer::updateGoal(float millisecs) { m_TimerGoal = millisecs; }
+inline Timer *Timer::setDuration(float millisecs) {
+  m_TimerGoal = millisecs;
+  return this;
+}
 
-inline void Timer::onProgress(float progressCooldown,
-                              t_TimerProgressHandler handler) {
+inline Timer *Timer::updateDuration(float millisecs) {
+  m_TimerGoal = millisecs;
+  return this;
+}
+
+inline Timer *Timer::onProgress(float progressCooldown,
+                                t_TimerProgressHandler handler) {
   m_ProgressResolution = progressCooldown;
   m_OnProgress = handler;
+
+  return this;
 }
 
-inline void Timer::onFinish(t_TimerFinishHandler handler) {
+inline Timer *Timer::onFinish(t_TimerFinishHandler handler) {
   m_OnFinish = handler;
+  return this;
 }
 
-// TODO: Continue here
+inline bool Timer::stageUpdate(Play p) {
+  m_ActiveTimerGoal = m_TimerGoal;
+
+  if (m_ResetRequested)
+    m_TimerValue = 0;
+  else
+    m_TimerValue += p.deltaTime * 1000.0;
+
+  if (m_TimerValue >= m_ActiveTimerGoal) {
+    m_OnFinish(this);
+    if (m_loop) {
+      m_TimerValue = 0;
+    } else {
+      return false;
+    }
+  } else if (m_TimerValue >= m_NextProgress) {
+    m_OnProgress(this, m_TimerValue, m_ActiveTimerGoal);
+    m_NextProgress += m_ProgressResolution;
+  }
+
+  return true;
+}
 
 }; // namespace Theater
 
