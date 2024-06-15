@@ -1,12 +1,13 @@
-#include <cstdio>
-#include <iostream>
+// The user can stop this example from being compiled, by
 #ifndef DISABLE_RAYTHEATER_EXAMPLE
 
 #include "RayTheater.hpp"
 #include "RayTheaterCollider.hpp"
 #include <climits>
+#include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <iostream>
 #include <raylib.h>
 
 //==============================================================================
@@ -106,31 +107,22 @@ class DemoScene : public Theater::Scene {
 private:
   Mouse mouse;
   Target target;
+
+  // The Scene will also display some helpfull messages, in case the user/player
+  // takes to long, we'll use a Timer for that.
   Theater::Timer helpTimer;
   bool m_showHelp = false;
   int m_timerProgress = 0;
 
   // BM: Scene - Implement Scene
 public:
-  // NOTE: a Scene's OnStart Method is called once, before it starts playing
-  void OnStart(Theater::Play p) override {
-
-    // We can use it to set up the random number generator
-    std::srand(time(NULL));
-
-    // and add our two actors to the Stage.
-    p.stage->AddActor(&mouse);
-    p.stage->AddActor(&target);
-
-    // We'll also setup the Target, since it has a Transform2D Component, we can
-    // change its location.
-    target.setLoc({160, 120});
-    p.stage->MakeActorVisible(&target);
-
-    // Let's configer a timer to show a helpfull message if the user takes
-    // to long to click the target
+  // Note: In the Scenes constructor, wen can set up the timer that delays
+  // the display of the helpfull message. We can also set up other things, that
+  // will never change over the applications life time. (like the seed for rand)
+  DemoScene() {
     helpTimer
         .setDuration(5000 /* the timer keeps running for 5 Seconds */)
+
         // When it finishes it toggles the help message to be visible
         ->onFinish([this](Theater::Timer *t) { this->m_showHelp = true; })
 
@@ -142,11 +134,30 @@ public:
                        m_timerProgress = static_cast<int>(progress);
                      });
 
+    // Lets also set up the random number generator here.
+    std::srand(time(NULL));
+  }
+
+  // NOTE: a Scene's OnStart Method is called once, before it starts playing
+  void OnStart(Theater::Play p) override {
+
+    // Lets add our two actors to the stage
+    p.stage->AddActor(&mouse);
+    p.stage->AddActor(&target);
+
+    // Unlike the mouse, the `target` does not become visible on its own.
+    // It also needs some further setting up, so lets do that here.
+    // change its location.
+    target.setLoc({160, 120});
+    // and make it visible
+    p.stage->MakeActorVisible(&target);
+
+    // at last start the timer, we prepared in the constructor
     p.stage->SetTimer(&helpTimer);
   }
 
   // NOTE: a Scene's OnEnd Method is called once, after it finished playing
-  // We'll remove our two actors and the timer from the Stage
+  // We'll remove our two actors and the timer from the Stage again
   void OnEnd(Theater::Play p) override {
     p.stage->RemoveActor(&target);
     p.stage->RemoveActor(&mouse);
@@ -156,7 +167,8 @@ public:
   // NOTE: a Scene's OnUpdate Method is called each Cycle
   void OnUpdate(Theater::Play p) override {
 
-    if (p.mouseReleased > 0 && mouse.isCollidingWithRect(&target)) {
+    // Here we can handle some simple application logic
+    if (p.mouseDown > 0 && mouse.isCollidingWithRect(&target)) {
 
       // if the target was clicked => change the Targets Position to a random
       // location
@@ -166,7 +178,7 @@ public:
           static_cast<float>((double)(std::rand()) / (double)RAND_MAX) *
               (p.stageHeight - 32)};
 
-      std::cout << "pos: " << pos.x << " - " << pos.y << std::endl;
+      std::cout << "new target pos: " << pos.x << " - " << pos.y << std::endl;
       target.setLoc(pos);
 
       // We'll also reset the HelpMessage and restart the timer for displaying
@@ -176,11 +188,17 @@ public:
     }
   }
 
+  // Note: a Scene's Stage Draw methods is called onced per cycle too, but
+  // its can directly influence what is displayed on the stage area.
   void OnStageDraw(Theater::Play p) override {
     if (m_showHelp) {
+
       // Draw the help message, if it is visible
       DrawText(" click the green box :-) ", 8, 8, 10, WHITE);
     } else {
+
+      // if the help-message is not visible yet, show how many seconds have
+      // passed
       char buffer[256];
       std::snprintf(buffer, 256, "%d", m_timerProgress / 1000);
       DrawText(buffer, 8, 8, 10, WHITE);
@@ -192,7 +210,7 @@ public:
 // NOTE: Finally, let's use the Main-Function to Build the Stage and start
 // playing the Scene
 //
-// BM: Mouse
+// BM: Main
 //==============================================================================
 int main(int argc, char **argv) {
 

@@ -140,7 +140,7 @@ int main() {
   - [Theater::Stage](./docs/stage.md)  
     Provided through Theater::Play and is used to Add, Read, Remove or Modify Actors on the Stage.
 
-- [Theater::Timer](./docs/timer.md)
+- [Theater::Timer](./docs/timer.md)  
   Provides a means to schedule function execution based on times passed.
 
 - [Theater::Actor](./docs/actors.md)  
