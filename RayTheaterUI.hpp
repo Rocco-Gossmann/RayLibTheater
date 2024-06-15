@@ -6,6 +6,7 @@
 #include <type_traits>
 
 #include "RayTheater.hpp"
+#include "RayTheaterCollider.hpp"
 
 namespace Theater {
 namespace UI {

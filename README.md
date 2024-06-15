@@ -20,21 +20,26 @@ Just because. :-)
 1.) this is depended on **RayLib** (https://www.raylib.com/)
 So make sure, you follow their Setup-Guide here first [RayLib - Build and Installation](https://github.com/raysan5/raylib?tab=readme-ov-file#build-and-installation)
 
-2.) Just copy the [RayTheater.hpp](./src/lib/RayTheater.hpp) into your own Project.
+2.) Just clone this Repo [RayTheater.hpp](./src/lib/RayTheater.hpp) into your own Project.
 
-2a.) Copy any [Additions](#additions), you want to have into the same folder
+3.) make sure your compilers IncludePath contains the repo
 
 That is it. No further steps needed.
 The Setup-Process is pretty much inspired by the
 **OneLoneCoder PixelGameEngine** (https://github.com/OneLoneCoder/olcPixelGameEngine)
 (Always loved how simple it is to integrate into existing projects, so I wanted to mimik that)
 
+By doing it this way, only the Parts of RayTheater, that you actually use, will become part of your executable.
+
+
+
+
 # Compiler Flags
 
 All you need is at least C++11 and the IncludePath to your RayTheater.hpp.
 Since this is using RayLib, you obviously also need ot add flags to that lib and headers as well.
 ```
--std=c++11 -I/Path/To/Your/RayTheaterHPP -L/Path/To/RayLib/Lib -I/PathToRayLib/Headers -lraylib
+-std=c++11 -I/Path/To/RayLibTheater -L/Path/To/RayLib/Lib -I/PathToRayLib/Headers -lraylib
 ```
 
 # How to use it in Code.
