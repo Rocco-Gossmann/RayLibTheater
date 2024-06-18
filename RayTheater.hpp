@@ -88,6 +88,15 @@ typedef struct Play {
   /** @brief The available Stage Height in PX */
   int stageHeight = 0;
 
+  /** @brief The available Stage Width in PX */
+  int windowWidth = 0;
+
+  /** @brief The available Stage Height in PX */
+  int windowHeight = 0;
+
+  /** @brief how much the stage has been scaled compared to the window size */
+  float stageScale = 1.0f;
+
   /** @brief Bitlist of mousebuttons just pressed this turn
    * Mouse Button 1 =  (1 << 1) aka bit 2;
    * Mouse Button 2 =  (1 << 2) aka bit 4;
@@ -426,6 +435,8 @@ private:
   float _stageWidth;
   float _stageHeight;
   float _stageScale;
+  bool _integerScale;
+
   RenderTexture2D _stage;
   Scene *_scene;
   Rectangle _viewportRect;
@@ -481,6 +492,11 @@ public:
    */
   Builder(int width, int height, float scale = 1.0)
       : _stage(Stage(width, height, scale)) {}
+
+  Builder IntegerScale() {
+    _stage._integerScale = true;
+    return *this;
+  }
 
   /**
    * @brief Sets the Title for the opened Window
@@ -539,7 +555,7 @@ inline Stage::Stage(int width, int height, float scale)
       _borderColor(Color{0x00, 0x88, 0xff, 0xff}), _handle_TICKING(),
       _handle_DEAD(), _handle_TRANSFORMABLE(), _stageScale(scale),
       _actorsToClear(), _stageTitle("< RayWrapC - Project >"), _renderNodes(),
-      _rendering(false), _tickingPaused(false) {
+      _rendering(false), _tickingPaused(false), _integerScale(false) {
 
   static_assert(ACTORLIMIT > 0, "Set ACTORLIMIT must be bigger than 0");
 
@@ -584,6 +600,9 @@ inline void Stage::Play(Scene *sc) {
   _play.stage = this;
   _play.stageWidth = _stageWidth;
   _play.stageHeight = _stageHeight;
+  _play.stageScale = _stageScale;
+  _play.windowWidth = _viewportRect.width;
+  _play.windowHeight = _viewportRect.height;
 
   // Activate the given scene
   switchScene(sc);
@@ -762,7 +781,15 @@ inline void Stage::onResize() {
   float scale =
       ::std::min(screenWidth / _stageWidth, screenHeight / _stageHeight);
 
+  if (_integerScale) {
+    scale = ::std::max(1.0, (double)floor(scale));
+  }
+
   _stageScale = scale;
+  _play.windowWidth = screenWidth;
+  _play.windowHeight = screenWidth;
+  _play.stageScale = scale;
+
   _viewportRect.width = _stageWidth * scale;
   _viewportRect.height = _stageHeight * scale;
   _viewportRect.x = (screenWidth - _viewportRect.width) * 0.5;

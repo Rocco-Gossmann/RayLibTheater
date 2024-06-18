@@ -218,6 +218,7 @@ int main(int argc, char **argv) {
 
   Theater::Builder(480, 320, 2)
       .Title("RayLib - Window 🎉")
+      .IntegerScale()
       .Play((Theater::Scene *)&sc);
 
   return 0;

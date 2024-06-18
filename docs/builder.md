@@ -36,7 +36,7 @@ your application should end.
 
 #### Param:
 | name    | type                             | description                 |
-| ------- | -------------------------------- | --------------------------- |
+|---------|----------------------------------|-----------------------------|
 | `title` | [`Theater::Scene*`](./scenes.md) | The new title of the Window |
 
 
@@ -56,7 +56,7 @@ Sets your Application-Windows title to the given `title`.
 #### Param:
 
 | name    | type          | description                 |
-| ------- | ------------- | --------------------------- |
+|---------|---------------|-----------------------------|
 | `title` | `const char*` | The new title of the Window |
 
 ---
@@ -76,7 +76,7 @@ This function defines what color the shown borders will be.
 #### Param:
 
 | name    | type                                   | description              |
-| ------- | -------------------------------------- | ------------------------ |
+|---------|----------------------------------------|--------------------------|
 | `color` | `Color`<br><small>(via RayLib)</small> | The Color fo the Borders |
 
 ---
@@ -93,7 +93,18 @@ not drawn to. All pixels are reset to this color each cycle.
 #### Param:
 
 | name    | type                                   | description                  |
-| ------- | -------------------------------------- | ---------------------------- |
+|---------|----------------------------------------|------------------------------|
 | `color` | `Color`<br><small>(via RayLib)</small> | The Color for the Background |
+
+---
+
+### IntegerScale
+
+```c++
+Builder IntegerScale()
+```
+If this is calles, the stage will keep its scale to full numbers, aka. 1x, 2x, 3x etc.
+This ensures, that pixels are always crist and square.
+
 
 ---
