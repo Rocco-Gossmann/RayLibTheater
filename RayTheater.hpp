@@ -205,8 +205,12 @@ private:
 class Visible : ActorComponent {
   friend Stage;
 
+private:
+  virtual void OnDraw(Play) = 0;
+
 public:
   Visible(Actor *ac) : ActorComponent(ac, VISIBLE) {}
+
   /**
    * @brief Sets what elements are drawn above which other
    * actors with higher numbers will be drawn above elements with lower numbers
@@ -220,7 +224,6 @@ public:
 private:
   int _renderListIndex = -1;
   int _zindex = 0;
-  virtual void OnDraw(Play) = 0;
 };
 
 // BM: Timer - Class
