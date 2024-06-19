@@ -13,7 +13,7 @@
 #include <raylib.h>
 #include <vector>
 
-#define byte char;
+#define byte char
 
 // Something to keep .clangd files with the -DSTAGE_ATTRIBUTE from interfering
 #ifdef STAGE_ATTRIBUTE
