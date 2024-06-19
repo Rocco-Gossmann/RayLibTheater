@@ -1,17 +1,19 @@
-#include <functional>
 #ifndef RAYTHEATER_H
-#define RAYTHEATER_H 1
+#define RAYTHEATER_H
 
 #include <climits>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <functional>
 #include <iostream>
 #include <ostream>
 #include <unordered_set>
 
 #include <raylib.h>
 #include <vector>
+
+#define byte char;
 
 // Something to keep .clangd files with the -DSTAGE_ATTRIBUTE from interfering
 #ifdef STAGE_ATTRIBUTE
