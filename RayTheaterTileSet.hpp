@@ -40,7 +40,8 @@ public:
   Index AddRect(Rectangle, Flags f = 0);
   void UpdateRect(Index, Rectangle);
 
-  void DrawTile(Index);
+  void DrawTile(Index idx, Vector2 position = {0, 0}, Vector2 origin = {0, 0},
+                float scale = 1.0f, float rotation = 0, Color tint = WHITE);
 
 private:
   Index m_rect_autoincrement;
@@ -72,12 +73,16 @@ inline TileSet::Index TileSet::AddRect(Rectangle r, TileSet::Flags f) {
   return idx;
 }
 
-inline void TileSet::DrawTile(Index idx) {
+inline void TileSet::DrawTile(Index idx, Vector2 pos, Vector2 ori, float scale,
+                              float rot, Color col) {
   auto find = m_rects.find(idx);
   if (find == m_rects.end())
     return;
 
-  DrawTextureRec(m_texture, find->second, {0, 0}, WHITE);
+  const Rectangle dest = {pos.x, pos.y, find->second.width * scale,
+                          find->second.height * scale};
+
+  DrawTexturePro(m_texture, find->second, dest, ori, rot, col);
 }
 
 } // namespace Theater

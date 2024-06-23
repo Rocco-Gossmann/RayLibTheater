@@ -1055,7 +1055,7 @@ template <typename T> inline void Stage::ClearActorFromStage(T *a) {
   }
 
   if (std::is_base_of<Ticking, T>::value) {
-    auto fndTick = _handle_TICKING.find((Ticking *)a);
+    auto fndTick = _handle_TICKING.find(a);
     if (fndTick != _handle_TICKING.end()) {
       _handle_TICKING.erase(fndTick);
     }
@@ -1086,7 +1086,7 @@ template <typename T> inline void Stage::ClearActorFromStage(T *a) {
 #if __has_include("RayTheaterAttributes.hpp")
 #include "RayTheaterAttributes.hpp"
 #endif // __has_include("RayTheaterAttributes.hpp")
-  STAGE_ATTRIBUTE(VISIBLE)
+  STAGE_ATTRIBUTE(VISIBLE);
 #undef STAGE_ATTRIBUTE
 }
 
