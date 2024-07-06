@@ -1,0 +1,216 @@
+#ifndef RAYTHEATER_STAGE_H
+#define RAYTHEATER_STAGE_H
+
+#include "./Actors.hpp"
+#include "./types.h"
+#include "raylib.h"
+#include <cassert>
+#include <string>
+
+namespace Theater {
+
+class Builder;
+
+class Stage {
+
+private:
+  friend class Builder;
+
+  enum StageProcess { PAUSED, UPDATE, DRAW, WINDOWDRAW, SWAPSCENE, SHUTDOWN };
+
+public:
+  class Scene {
+  public:
+    virtual void OnLoad(const Stage *s){};
+    virtual void OnTick(const Stage *s, Play p){};
+    virtual void OnSceneDrawBG(){};
+    virtual void OnSceneDrawFG(){};
+    virtual void OnWindowDraw(){};
+    virtual void OnUnload(const Stage *s){};
+  };
+
+  Stage();
+  template <typename T> void ChangeScene(T *s);
+  void ChangeScene();
+
+private:
+  StageProcess m_stageProcess;
+  Play m_play;
+  Rectangle m_viewportrect;
+  Rectangle m_stagerect;
+  RenderTexture m_stagetexture;
+  bool m_integerScale;
+  Color m_borderColor;
+  Color m_backgroundColor;
+  float m_scale;
+
+  Actors m_actors;
+
+  Scene *m_currentStageState;
+  Scene *m_nextStageState;
+
+  /** defines if the stages state has been changes this cycle */
+  bool m_stageStateSet;
+
+  bool swapStageStates();
+  void shutdown();
+  void onResize();
+  void updatePlay();
+
+  void play();
+};
+
+// BM: Implementation
+//==============================================================================
+
+inline Stage::Stage()
+    : m_currentStageState(nullptr), m_nextStageState(nullptr),
+      m_stageProcess(PAUSED), m_actors(), m_viewportrect({0, 0, 256, 192}),
+      m_integerScale(false), m_stagerect({0, 0, 256, 192}), m_stagetexture(),
+      m_play() {
+  m_actors.m_play = &m_play;
+}
+
+inline void Stage::ChangeScene() {
+  m_nextStageState = nullptr;
+  m_stageStateSet = true;
+}
+
+template <typename T> inline void Stage::ChangeScene(T *s) {
+  static_assert(std::is_base_of<Stage::Scene, T>::value,
+                "Given Scene must be a child of class Stage::Scene");
+  m_nextStageState = (Stage::Scene *)s;
+  m_stageStateSet = true;
+}
+
+inline bool Stage::swapStageStates() {
+  if (m_stageStateSet) {
+    const auto osp = m_stageProcess;
+    m_stageProcess = SWAPSCENE;
+
+    if (m_currentStageState != nullptr)
+      m_currentStageState->OnUnload(this);
+
+    m_currentStageState = m_nextStageState;
+
+    if (m_currentStageState != nullptr)
+      m_currentStageState->OnLoad(this);
+
+    m_stageStateSet = false;
+    m_stageProcess = osp;
+
+    return true;
+  }
+  return false;
+}
+
+inline void Stage::shutdown() {
+  ChangeScene();
+  swapStageStates();
+  UnloadRenderTexture(m_stagetexture);
+  CloseWindow();
+}
+
+inline void Stage::onResize() {
+  float screenWidth = GetScreenWidth();
+  float screenHeight = GetScreenHeight();
+  float scale = ::std::min(screenWidth / m_stagerect.width,
+                           screenHeight / m_stagerect.height);
+
+  if (m_integerScale) {
+    scale = ::std::max(1.0, (double)floor(scale));
+  }
+
+  m_scale = scale;
+  m_play.windowWidth = screenWidth;
+  m_play.windowHeight = screenWidth;
+  m_play.stageScale = scale;
+
+  m_viewportrect.width = m_stagerect.width * scale;
+  m_viewportrect.height = m_stagerect.height * scale;
+  m_viewportrect.x = (screenWidth - m_viewportrect.width) * 0.5;
+  m_viewportrect.y = (screenHeight - m_viewportrect.height) * 0.5;
+}
+
+inline void Stage::updatePlay() {
+  // Put DeltaTime - Multiplyer into context
+  m_play.deltaTime = GetFrameTime();
+
+  // Update MousePosition
+  m_play.mouseLoc = Vector2({(float)GetMouseX(), (float)GetMouseY()});
+
+  m_play.mouseLoc.x -= m_viewportrect.x;
+  m_play.mouseLoc.y -= m_viewportrect.y;
+
+  m_play.mouseLoc.x /= m_scale;
+  m_play.mouseLoc.y /= m_scale;
+
+  m_play.mouseX = std::floor(m_play.mouseLoc.x);
+  m_play.mouseY = std::floor(m_play.mouseLoc.y);
+
+  // Update MouseButtons
+  m_play.mouseReleased = m_play.mouseHeld | m_play.mouseDown;
+  m_play.mouseHeld = 0;
+  m_play.mouseUp = 0;
+  m_play.mouseDown = 0;
+
+  for (unsigned char a = 1; a < 7; a++) {
+    m_play.mouseDown |= (IsMouseButtonPressed(a - 1) ? 1 : 0) << a;
+    m_play.mouseHeld |= (IsMouseButtonDown(a - 1) ? 1 : 0) << a;
+    m_play.mouseUp |= (IsMouseButtonUp(a - 1) ? 1 : 0) << a;
+  }
+
+  // Just in case held and Pressed overlap => remove Pressed from held.
+  m_play.mouseHeld &= ~m_play.mouseDown;
+  m_play.mouseUp &= ~(m_play.mouseDown | m_play.mouseHeld);
+  m_play.mouseReleased &= m_play.mouseUp;
+}
+
+// BM: Implementation - Play
+//==============================================================================
+
+inline void Stage::play() {
+
+  swapStageStates();
+
+  while (m_currentStageState != nullptr && !WindowShouldClose()) {
+
+    // switch to a new scene if needed.
+    if (swapStageStates())
+      continue;
+
+    // React to Window being resized
+    if (IsWindowResized())
+      onResize();
+
+    // TODO: Update Play
+    updatePlay();
+
+    // Tick the stage
+    m_currentStageState->OnTick(this, m_play);
+
+    // Tick the actors
+    m_actors.OnTick(this, m_play);
+
+    // Draw the Stage
+    BeginTextureMode(m_stagetexture);
+    ClearBackground(m_backgroundColor);
+    m_currentStageState->OnSceneDrawBG();
+    m_actors.OnStageDraw();
+    m_currentStageState->OnSceneDrawFG();
+    EndTextureMode();
+
+    // Render the Stage
+    BeginDrawing();
+    ClearBackground(m_borderColor);
+    DrawTexturePro(m_stagetexture.texture, m_stagerect, m_viewportrect, {0, 0},
+                   0, WHITE);
+    m_currentStageState->OnWindowDraw();
+    EndDrawing();
+  }
+
+  shutdown();
+}
+
+} // namespace Theater
+#endif
