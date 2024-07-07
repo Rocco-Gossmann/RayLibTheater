@@ -1,12 +1,26 @@
 #ifndef RAYTHEATER_H
 #define RAYTHEATER_H
 
+#include <raylib.h>
+
+#ifdef DEBUG
+#include <cstdio>
+#include <iostream>
+#define DebugLog(msg) std::cout << "[DebugLog] " << msg << std::endl;
+#else
+#define DebugLog(msg)
+#endif
+
+#ifdef TESTS
+#define TestOnly(stuff) stuff;
+#else
+#define TestOnly(stuff) /**/ ;
+#endif
+
 #include "./internal/Builder.hpp"
 #include "./internal/Play.h"
 #include "./internal/Stage.hpp"
 #include "./internal/types.h"
-
-#include <raylib.h>
 
 // #include "./internal/RayTheaterBuilder.hpp"
 // #include "./internal/RayTheaterPlay.hpp"
