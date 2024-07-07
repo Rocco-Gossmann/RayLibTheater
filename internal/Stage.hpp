@@ -3,6 +3,7 @@
 
 #include "./Actors.hpp"
 #include "./types.h"
+#include "RayTheater.hpp"
 #include "raylib.h"
 #include <cassert>
 #include <string>
@@ -19,19 +20,22 @@ private:
   enum StageProcess { PAUSED, UPDATE, DRAW, WINDOWDRAW, SWAPSCENE, SHUTDOWN };
 
 public:
+  //==============================================================================
+  // BM: Stage::Scene - Class
+  //==============================================================================
   class Scene {
   public:
-    virtual void OnLoad(const Stage *s){};
-    virtual void OnTick(const Stage *s, Play p){};
-    virtual void OnSceneDrawBG(){};
-    virtual void OnSceneDrawFG(){};
-    virtual void OnWindowDraw(){};
-    virtual void OnUnload(const Stage *s){};
+    virtual void OnLoad(Stage *s) {};
+    virtual void OnTick(Stage *s, Play p) {};
+    virtual void OnSceneDrawBG() {};
+    virtual void OnSceneDrawFG() {};
+    virtual void OnWindowDraw() {};
+    virtual void OnUnload(Stage *s) {};
   };
 
   Stage();
-  template <typename T> void ChangeScene(T *s);
-  void ChangeScene();
+  template <typename T> const void ChangeScene(T *s = nullptr);
+  const void EndPlay();
 
 private:
   StageProcess m_stageProcess;
@@ -71,41 +75,53 @@ inline Stage::Stage()
   m_actors.m_play = &m_play;
 }
 
-inline void Stage::ChangeScene() {
-  m_nextStageState = nullptr;
-  m_stageStateSet = true;
-}
-
-template <typename T> inline void Stage::ChangeScene(T *s) {
+template <typename T> inline const void Stage::ChangeScene(T *s) {
   static_assert(std::is_base_of<Stage::Scene, T>::value,
                 "Given Scene must be a child of class Stage::Scene");
   m_nextStageState = (Stage::Scene *)s;
   m_stageStateSet = true;
 }
 
+inline const void Stage::EndPlay() {
+  DebugLog("[Stage::EndPlay] invoced " << m_nextStageState);
+  m_nextStageState = nullptr;
+  m_stageStateSet = true;
+}
+
 inline bool Stage::swapStageStates() {
   if (m_stageStateSet) {
+    DebugLog("[Stage::swapStageStages] invoced " << m_nextStageState);
+
     const auto osp = m_stageProcess;
     m_stageProcess = SWAPSCENE;
 
-    if (m_currentStageState != nullptr)
+    if (m_currentStageState != nullptr) {
+      DebugLog("[Stage::swapStageStages] current scene unload "
+               << m_currentStageState);
       m_currentStageState->OnUnload(this);
+    }
 
     m_currentStageState = m_nextStageState;
-
-    if (m_currentStageState != nullptr)
-      m_currentStageState->OnLoad(this);
-
+    m_nextStageState = nullptr;
     m_stageStateSet = false;
+
+    if (m_currentStageState != nullptr) {
+      DebugLog("[Stage::swapStageStages] next scene load "
+               << m_currentStageState);
+      m_currentStageState->OnLoad(this);
+    }
+
     m_stageProcess = osp;
 
     return true;
   }
+
   return false;
 }
 
 inline void Stage::shutdown() {
-  ChangeScene();
+  DebugLog("[Stage::shutdown] invoked");
+  EndPlay();
   swapStageStates();
   UnloadRenderTexture(m_stagetexture);
   CloseWindow();
@@ -133,6 +149,7 @@ inline void Stage::onResize() {
 }
 
 inline void Stage::updatePlay() {
+  DebugLog("[Stage::updatePlay] invoked");
   // Put DeltaTime - Multiplyer into context
   m_play.deltaTime = GetFrameTime();
 
@@ -175,6 +192,8 @@ inline void Stage::play() {
 
   while (m_currentStageState != nullptr && !WindowShouldClose()) {
 
+    DebugLog("[Stage::play] Tick");
+
     // switch to a new scene if needed.
     if (swapStageStates())
       continue;
@@ -187,16 +206,21 @@ inline void Stage::play() {
     updatePlay();
 
     // Tick the stage
+    DebugLog("[Stage::play] call Scene->OnTick ");
     m_currentStageState->OnTick(this, m_play);
 
     // Tick the actors
+    DebugLog("[Stage::play] call Actors->OnTick ");
     m_actors.OnTick(this, m_play);
 
     // Draw the Stage
     BeginTextureMode(m_stagetexture);
     ClearBackground(m_backgroundColor);
+    DebugLog("[Stage::play] call Scene->OnSceneDrawBG ");
     m_currentStageState->OnSceneDrawBG();
+    DebugLog("[Stage::play] call Actors->OnStageDraw ");
     m_actors.OnStageDraw();
+    DebugLog("[Stage::play] call Scene->OnSceneDrawFG ");
     m_currentStageState->OnSceneDrawFG();
     EndTextureMode();
 
@@ -205,6 +229,7 @@ inline void Stage::play() {
     ClearBackground(m_borderColor);
     DrawTexturePro(m_stagetexture.texture, m_stagerect, m_viewportrect, {0, 0},
                    0, WHITE);
+    DebugLog("[Stage::play] call Scene->OnWindowDraw ");
     m_currentStageState->OnWindowDraw();
     EndDrawing();
   }
