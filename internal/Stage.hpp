@@ -2,8 +2,8 @@
 #define RAYTHEATER_STAGE_H
 
 #include "./Actors.hpp"
+#include "./macros.h"
 #include "./types.h"
-#include "RayTheater.hpp"
 #include "raylib.h"
 #include <cassert>
 #include <string>
