@@ -5,7 +5,7 @@
 
 #ifdef DEBUG
 #include <iostream>
-#define DebugLog(msg) std::cout << "[DebugLog] " << msg << std::endl;
+#define DebugLog(msg) std::cout << "[DebugLog] " << msg << std::endl
 #else
 #define DebugLog(msg)
 #endif

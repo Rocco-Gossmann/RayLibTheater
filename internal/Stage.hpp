@@ -25,17 +25,20 @@ public:
   //==============================================================================
   class Scene {
   public:
-    virtual void OnLoad(Stage *s) {};
-    virtual void OnTick(Stage *s, Play p) {};
-    virtual void OnSceneDrawBG() {};
-    virtual void OnSceneDrawFG() {};
-    virtual void OnWindowDraw() {};
-    virtual void OnUnload(Stage *s) {};
+    virtual void OnLoad(Stage *s){};
+    virtual void OnTick(Stage *s, Play p){};
+    virtual void OnSceneDrawBG(){};
+    virtual void OnSceneDrawFG(){};
+    virtual void OnWindowDraw(){};
+    virtual void OnUnload(Stage *s){};
   };
 
   Stage();
   template <typename T> const void ChangeScene(T *s = nullptr);
   const void EndPlay();
+
+  template <typename A> ActorRessource AddActor(A *);
+  void RemoveActor(ActorRessource);
 
 private:
   StageProcess m_stageProcess;
@@ -88,6 +91,12 @@ inline const void Stage::EndPlay() {
   m_stageStateSet = true;
 }
 
+template <typename A> ActorRessource Stage::AddActor(A *a) {
+  return m_actors.AddActor(this, a);
+}
+
+inline void Stage::RemoveActor(ActorRessource a) { m_actors.RemoveActor(a); }
+
 inline bool Stage::swapStageStates() {
   if (m_stageStateSet) {
     DebugLog("[Stage::swapStageStages] invoced " << m_nextStageState);
@@ -121,8 +130,12 @@ inline bool Stage::swapStageStates() {
 
 inline void Stage::shutdown() {
   DebugLog("[Stage::shutdown] invoked");
+
   EndPlay();
   swapStageStates();
+
+  m_actors.Clear(this);
+
   UnloadRenderTexture(m_stagetexture);
   CloseWindow();
 }

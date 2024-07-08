@@ -10,7 +10,7 @@ class MyScene : public Stage::Scene {
 };
 
 int main() {
-  const MyScene s;
+  MyScene s;
   DebugLog("--- Base - Test ------------------------------ ");
   Builder(256, 192, 2).Title("Test 1 - Basics")->Play(&s);
 

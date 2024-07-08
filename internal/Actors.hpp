@@ -1,11 +1,13 @@
 #ifndef RAYTHEATER_ACTORS_H
-#define RAYTHEATER_ACTORS_H 1
+#define RAYTHEATER_ACTORS_H
 
 #ifndef RT_MAX_STAGE_ACTOR_COUNT
 #define RT_MAX_STAGE_ACTOR_COUNT 0
 #endif
 
+#include "./Play.h"
 #include "./RenderList.hpp"
+#include "./macros.h"
 #include "./types.h"
 #include <cassert>
 #include <unordered_set>
@@ -13,45 +15,39 @@
 
 namespace Theater {
 
-class Stage;
+class Actor {
+public:
+  Actor(byte renderLayer = 0) : m_zindex(renderLayer) {}
+
+private:
+  virtual void OnEnter(Stage *) {}
+  virtual void OnTick(Stage *, Play) {}
+  virtual void OnStageDraw() {}
+  virtual void OnWindowDraw() {}
+  virtual void OnLeave(Stage *) {}
+
+  byte m_zindex = 0; // Must be set > 0 for Actor be rendered
+
+  friend class Actors;
+};
 
 class Actors {
 
 private:
   friend class Stage;
 
-  class Actor {
-    friend class Actors;
-
-  public:
-    Actor();
-
-  private:
-    bool m_isActive;
-    bool m_isAlive;
-  };
-
 public:
-  typedef struct ActorTemplate {
-    TheaterStageHandler *onEnter = nullptr;
-    TheaterHandler *onTick = nullptr;
-    TheaterDrawHandler *onStageDraw = nullptr;
-    TheaterDrawHandler *onWindowDraw = nullptr;
-    TheaterStageHandler *onLeave = nullptr;
-    byte drawIndex = 1;
-  } ActorTemplate;
-
   Actors();
-  ActorRessource AddActor(Stage *s, ActorTemplate);
+  template <typename T>
+  ActorRessource AddActor(Stage *s, T *actor, byte zIndex = 0);
   void RemoveActor(ActorRessource);
 
 private:
   void OnTick(Stage *, Play);
   void OnStageDraw();
   void OnWindowDraw();
-
-  TheaterHandler m_onTick[RT_MAX_STAGE_ACTOR_COUNT];
-  TheaterStageHandler m_onLeave[RT_MAX_STAGE_ACTOR_COUNT];
+  void Clear(Stage *);
+  void ReclaimSlots(Stage *);
 
   RenderListNode m_renderListNodes[RT_MAX_STAGE_ACTOR_COUNT];
   RenderListNode m_renderList;
@@ -72,12 +68,9 @@ inline Actors::Actors() : m_play(nullptr) {
     m_slots_free.reserve(RT_MAX_STAGE_ACTOR_COUNT);
     for (int i = RT_MAX_STAGE_ACTOR_COUNT - 1; i >= 0; i--) {
       m_slots_free.insert(i);
-      m_onTick[i] = NoHandler;
-      m_onLeave[i] = NoStageHandler;
 
       m_renderListNodes[i].zindex = 0;
-      m_renderListNodes[i].stageDraw = NoDrawHandler;
-      m_renderListNodes[i].windowDraw = NoDrawHandler;
+      m_renderListNodes[i].actor = nullptr;
 
       if (i > 0) {
         m_renderListNodes[i].prev = &m_renderListNodes[i - 1];
@@ -93,26 +86,30 @@ inline Actors::Actors() : m_play(nullptr) {
   }
 }
 
-inline ActorRessource Actors::AddActor(Stage *s, ActorTemplate a) {
+template <typename T> ActorRessource Actors::AddActor(Stage *s, T *a, byte z) {
+
+  static_assert(std::is_base_of<Actor, T>::value,
+                "given actor must be a pointer on an Theater::Actor");
+
+  assert(RT_MAX_STAGE_ACTOR_COUNT > 0 &&
+         "`#define RT_MAX_STAGE_ACTOR_COUNT` must be > 0");
 
   auto it = m_slots_free.begin();
-  assert(it != m_slots_free.end());
+  assert(it != m_slots_free.end() &&
+         "actor limit reached. Increase RT_MAX_STAGE_ACTOR_COUNT, to add more");
 
   ActorRessource res = *it;
 
-  (*a.onEnter)(s);
+  a->OnEnter(s);
 
-  if (a.onTick != nullptr)
-    m_onTick[res] = *(a.onTick);
-
-  if (a.onLeave != nullptr)
-    m_onLeave[res] = *(a.onLeave);
-
-  if (a.onWindowDraw != nullptr || a.onStageDraw != nullptr) {
-    m_renderListNodes[res].stageDraw = *(a.onStageDraw);
-    m_renderListNodes[res].windowDraw = *(a.onWindowDraw);
-    m_renderListNodes[res].zindex = a.drawIndex;
+  m_renderListNodes[res].actor = a;
+  if (z > 0) {
+    m_renderListNodes[res].zindex = z;
+  } else {
+    m_renderListNodes[res].zindex = a->m_zindex;
   }
+
+  m_slots_free.erase(it);
 
   return res;
 }
@@ -122,9 +119,7 @@ inline void Actors::RemoveActor(ActorRessource a) {
   m_slots_reclaim.push_back(a);
 }
 
-inline void Actors::OnTick(Stage *s, Play p) {
-
-  // cleanup reclaimed actors, if needed
+inline void Actors::ReclaimSlots(Stage *s) {
   if (m_slots_reclaim.size() > 0) {
     for (auto it = m_slots_reclaim.begin(); it != m_slots_reclaim.end(); it++) {
 
@@ -132,25 +127,29 @@ inline void Actors::OnTick(Stage *s, Play p) {
 
       // Free the slot and call onLeave on the actor, if not done yet
       if (m_slots_free.find(slot) == m_slots_free.end()) {
-        m_onLeave[slot](s);
+        m_renderListNodes[slot].actor->OnLeave(s);
         m_slots_free.insert(slot);
       }
 
       // remove the slot that was freed from the renderer
-      m_onLeave[slot] = NoStageHandler;
-      m_onTick[slot] = NoHandler;
-      m_renderListNodes[slot].stageDraw = NoDrawHandler;
-      m_renderListNodes[slot].windowDraw = NoDrawHandler;
+      m_renderListNodes[slot].actor = nullptr;
       m_renderListNodes[slot].zindex = 0;
     }
     // empty reclaim list
     m_slots_reclaim.clear();
   }
+}
+
+inline void Actors::OnTick(Stage *s, Play p) {
+
+  // cleanup reclaimed actors, if needed
+  ReclaimSlots(s);
 
   // Tick all the actors, that are still, active
   Play play = *m_play;
   for (int i = 0; i < RT_MAX_STAGE_ACTOR_COUNT; i++)
-    m_onTick[i](s, play);
+    if (m_renderListNodes[i].actor != nullptr)
+      m_renderListNodes[i].actor->OnTick(s, play);
 
   // Reorder RenderList if needed
   for (int i = 1; i < RT_MAX_STAGE_ACTOR_COUNT; i++) {
@@ -181,13 +180,29 @@ inline void Actors::OnTick(Stage *s, Play p) {
 inline void Actors::OnStageDraw() {
   RenderListNode *node = &m_renderList;
   while ((node = node->next) != nullptr && node->zindex > 0)
-    node->stageDraw();
+    node->actor->OnStageDraw();
 }
 
 inline void Actors::OnWindowDraw() {
   RenderListNode *node = &m_renderList;
   while ((node = node->next) != nullptr && node->zindex > 0)
-    node->windowDraw();
+    node->actor->OnWindowDraw();
+}
+
+inline void Actors::Clear(Stage *s) {
+
+  ReclaimSlots(s);
+
+  for (int i = 0; i < RT_MAX_STAGE_ACTOR_COUNT; i++) {
+    if (m_renderListNodes[i].actor != nullptr) {
+
+      DebugLog("[Actors::Clear] found still registered Actor " << i);
+
+      m_renderListNodes[i].actor->OnLeave(nullptr);
+      m_renderListNodes[i].actor = nullptr;
+      m_renderListNodes[i].zindex = 0;
+    }
+  }
 }
 
 } // namespace Theater

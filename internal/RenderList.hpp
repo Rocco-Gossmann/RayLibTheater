@@ -6,10 +6,11 @@
 
 namespace Theater {
 
+class Actor;
+
 typedef struct RenderListNode {
 
-  TheaterDrawHandler stageDraw;  // maybe use tese handlers to fire an event,
-  TheaterDrawHandler windowDraw; // once all actors where rendered???
+  Actor *actor = nullptr;
 
   byte zindex = 0;
 
