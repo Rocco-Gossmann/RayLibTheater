@@ -5,7 +5,7 @@ DIRBUILD:=./build
 
 CSOURCE:=$(shell find $(DIRSRC) -name "*.cpp")
 TARGETS:=$(patsubst $(DIRSRC)/%.cpp, $(DIRBUILD)/%.test, $(CSOURCE))
-FLAGS:= -O0 -g -Wall -DDEBUG -Wno-reorder-ctor -DTESTS $(shell pkg-config --cflags --libs raylib) -I../
+FLAGS:= -O0 -g -Wall -DDEBUG -Wno-reorder-ctor -DTESTS $(shell pkg-config --cflags --libs raylib) -I../ -I./
 
 .PHONY: all remake dev clean
 

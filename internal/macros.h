@@ -1,8 +1,6 @@
 #ifndef MACROS_H
 #define MACROS_H
 
-#include <raylib.h>
-
 #ifdef DEBUG
 #include <iostream>
 #define DebugLog(msg) std::cout << "[DebugLog] " << msg << std::endl

@@ -1,12 +1,13 @@
 #ifndef RAYTHEATER_STAGE_H
 #define RAYTHEATER_STAGE_H
 
-#include "./Actors.hpp"
-#include "./macros.h"
-#include "./types.h"
 #include "raylib.h"
 #include <cassert>
-#include <string>
+
+#include "./macros.h"
+#include "./types.h"
+
+#include "./Actors.hpp"
 
 namespace Theater {
 
@@ -37,8 +38,18 @@ public:
   template <typename T> const void ChangeScene(T *s = nullptr);
   const void EndPlay();
 
-  template <typename A> ActorRessource AddActor(A *);
+  /** @brief Adds an Actor to the stage
+   * @param actor - a pointer to an instance that inherits from "Theater::Actor"
+   * @param zIndex - =0 == actor will be processed, but not rendered
+                     >0 == actor will be processed and rendered the bigger the
+                           number, the further back the actor will be moved on
+                           the stage (aka. the more elements can appear above
+                           it)
+  */
+  template <typename A> ActorRessource AddActor(A *actor, byte zIndex = 0);
   void RemoveActor(ActorRessource);
+
+  std::unordered_set<Actor *> getActorsWithAttribute(ATTRIBUTES);
 
 private:
   StageProcess m_stageProcess;
@@ -65,6 +76,9 @@ private:
   void updatePlay();
 
   void play();
+
+  // set lists of actors with certain
+  std::unordered_map<ATTRIBUTES, ActorRessourceList> m_attributeLists;
 };
 
 // BM: Implementation
@@ -74,8 +88,13 @@ inline Stage::Stage()
     : m_currentStageState(nullptr), m_nextStageState(nullptr),
       m_stageProcess(PAUSED), m_actors(), m_viewportrect({0, 0, 256, 192}),
       m_integerScale(false), m_stagerect({0, 0, 256, 192}), m_stagetexture(),
-      m_play() {
+      m_play(), m_attributeLists({}) {
   m_actors.m_play = &m_play;
+
+#define ACTOR_ATTRIBUTE(attr)                                                  \
+  m_attributeLists.insert({attr, ActorRessourceList{}});
+#include "./internal/AttributeSet.h"
+#undef ACTOR_ATTRIBUTE
 }
 
 template <typename T> inline const void Stage::ChangeScene(T *s) {
@@ -91,11 +110,27 @@ inline const void Stage::EndPlay() {
   m_stageStateSet = true;
 }
 
-template <typename A> ActorRessource Stage::AddActor(A *a) {
-  return m_actors.AddActor(this, a);
+template <typename A> ActorRessource Stage::AddActor(A *a, byte z) {
+  auto res = m_actors.AddActor(this, a, z);
+
+  for (auto attr : ((Actor *)a)->GetAttributes()) {
+    const auto it = m_attributeLists.find(attr);
+    if (it != m_attributeLists.end())
+      it->second.insert(res);
+  }
+
+  return res;
 }
 
-inline void Stage::RemoveActor(ActorRessource a) { m_actors.RemoveActor(a); }
+inline void Stage::RemoveActor(ActorRessource a) {
+  m_actors.RemoveActor(a);
+
+  auto it = m_attributeLists.begin();
+  while (it != m_attributeLists.end()) {
+    it->second.erase(a);
+    it++;
+  }
+}
 
 inline bool Stage::swapStageStates() {
   if (m_stageStateSet) {
@@ -138,6 +173,8 @@ inline void Stage::shutdown() {
 
   UnloadRenderTexture(m_stagetexture);
   CloseWindow();
+
+  m_attributeLists.clear();
 }
 
 inline void Stage::onResize() {
@@ -194,6 +231,19 @@ inline void Stage::updatePlay() {
   m_play.mouseHeld &= ~m_play.mouseDown;
   m_play.mouseUp &= ~(m_play.mouseDown | m_play.mouseHeld);
   m_play.mouseReleased &= m_play.mouseUp;
+}
+
+inline std::unordered_set<Actor *> Stage::getActorsWithAttribute(ATTRIBUTES a) {
+  std::unordered_set<Actor *> ret;
+
+  const auto it = m_attributeLists.find(a);
+  if (it != m_attributeLists.end()) {
+    for (auto i : (*it).second) {
+      ret.insert(m_actors.getActorByRessource(i));
+    }
+  }
+
+  return ret;
 }
 
 // BM: Implementation - Play

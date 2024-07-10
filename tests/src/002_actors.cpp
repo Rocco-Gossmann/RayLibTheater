@@ -1,3 +1,5 @@
+#ifdef TESTS
+
 #define RT_MAX_STAGE_ACTOR_COUNT 2
 
 #include "RayTheater.hpp"
@@ -7,11 +9,8 @@ using namespace Theater;
 //==============================================================================
 // BM: DebugActor - Class
 //==============================================================================
-
 class DebugActor : public Actor {
 public:
-  DebugActor() : Actor(1) {}
-
   void OnEnter(Stage *) override { DebugLog("[DebugActor] onEnter"); }
   void OnTick(Stage *, Play) override { DebugLog("[DebugActor] onTick"); }
   void OnStageDraw() override { DebugLog("[DebugActor] onStageDraw"); }
@@ -26,9 +25,9 @@ public:
 class MyScene : public Stage::Scene {
 public:
   void OnLoad(Stage *s) override {
-    m_debugActor_id = s->AddActor(&m_debugActor);
+    m_debugActor_id = s->AddActor(&m_debugActor, 1);
     DebugLog("[MyScene::OnLoad] got Actor " << m_debugActor_id);
-    m_debugActor_id2 = s->AddActor(&m_debugActor2);
+    m_debugActor_id2 = s->AddActor(&m_debugActor2, 2);
     DebugLog("[MyScene::OnLoad] got Actor " << m_debugActor_id2);
   };
 
@@ -58,3 +57,5 @@ int main() {
 
   return 0;
 }
+
+#endif

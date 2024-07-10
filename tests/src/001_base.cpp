@@ -1,3 +1,5 @@
+#ifdef TESTS
+
 #include "RayTheater.hpp"
 
 using namespace Theater;
@@ -16,3 +18,5 @@ int main() {
 
   return 0;
 }
+
+#endif

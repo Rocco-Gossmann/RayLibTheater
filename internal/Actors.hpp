@@ -15,20 +15,17 @@
 
 namespace Theater {
 
+class Actors;
+
 class Actor {
 public:
-  Actor(byte renderLayer = 0) : m_zindex(renderLayer) {}
-
-private:
   virtual void OnEnter(Stage *) {}
   virtual void OnTick(Stage *, Play) {}
   virtual void OnStageDraw() {}
   virtual void OnWindowDraw() {}
   virtual void OnLeave(Stage *) {}
 
-  byte m_zindex = 0; // Must be set > 0 for Actor be rendered
-
-  friend class Actors;
+  virtual AttributeList GetAttributes();
 };
 
 class Actors {
@@ -41,6 +38,8 @@ public:
   template <typename T>
   ActorRessource AddActor(Stage *s, T *actor, byte zIndex = 0);
   void RemoveActor(ActorRessource);
+
+  Actor *getActorByRessource(ActorRessource);
 
 private:
   void OnTick(Stage *, Play);
@@ -57,6 +56,10 @@ private:
 
   Play *m_play;
 };
+
+// BM: Actor - Implementation
+//==============================================================================
+inline AttributeList Actor::GetAttributes() { return {}; }
 
 // BM: Actors - Implementation
 //==============================================================================
@@ -103,11 +106,7 @@ template <typename T> ActorRessource Actors::AddActor(Stage *s, T *a, byte z) {
   a->OnEnter(s);
 
   m_renderListNodes[res].actor = a;
-  if (z > 0) {
-    m_renderListNodes[res].zindex = z;
-  } else {
-    m_renderListNodes[res].zindex = a->m_zindex;
-  }
+  m_renderListNodes[res].zindex = z;
 
   m_slots_free.erase(it);
 
@@ -204,6 +203,13 @@ inline void Actors::Clear(Stage *s) {
     }
   }
 }
+
+inline Actor *Actors::getActorByRessource(ActorRessource r) {
+  assert(r < RT_MAX_STAGE_ACTOR_COUNT &&
+         "requested actor is not part of the pool");
+
+  return m_renderListNodes[r].actor;
+};
 
 } // namespace Theater
 

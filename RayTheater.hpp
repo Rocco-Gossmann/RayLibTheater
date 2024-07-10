@@ -1,6 +1,7 @@
 #ifndef RAYTHEATER_H
 #define RAYTHEATER_H
 
+#include "./internal/ActorAttributes.h"
 #include "./internal/Builder.hpp"
 #include "./internal/Play.h"
 #include "./internal/Stage.hpp"

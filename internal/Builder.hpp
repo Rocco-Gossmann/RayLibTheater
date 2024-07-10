@@ -28,6 +28,7 @@ public:
    */
   Builder(int width, int height, float scale = 1.0) {
     // Setup the Window
+    SetTraceLogLevel(LOG_ERROR);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(width * scale, height * scale, "Loading ...");
 
