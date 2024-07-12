@@ -2,6 +2,7 @@
 #define RAYTHEATER_STAGE_H
 
 #include "internal/ActorAttributes.h"
+#include "internal/Timer.hpp"
 #include "raylib.h"
 #include <cassert>
 #include <type_traits>
@@ -54,6 +55,8 @@ public:
   void AddActorAttribute(ActorRessource, ATTRIBUTES);
   void RemoveActorAttribute(ActorRessource, ATTRIBUTES);
   std::unordered_set<Actor *> getActorsWithAttribute(ATTRIBUTES);
+
+  void StartTimer(Timer *);
 
 private:
   StageProcess m_stageProcess;
@@ -135,7 +138,7 @@ inline void Stage::RemoveActor(ActorRessource a) {
   }
 }
 
-void Stage::AddActorAttribute(ActorRessource r, ATTRIBUTES a) {
+inline void Stage::AddActorAttribute(ActorRessource r, ATTRIBUTES a) {
   const auto act = m_actors.getActorByRessource(r);
   assert(act != nullptr && "Actor was not added to Stage");
 
@@ -148,7 +151,7 @@ void Stage::AddActorAttribute(ActorRessource r, ATTRIBUTES a) {
   }
 }
 
-void Stage::RemoveActorAttribute(ActorRessource r, ATTRIBUTES a) {
+inline void Stage::RemoveActorAttribute(ActorRessource r, ATTRIBUTES a) {
   const auto act = m_actors.getActorByRessource(r);
   assert(act != nullptr && "Actor was not added to Stage");
 

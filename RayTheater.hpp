@@ -1,12 +1,14 @@
 #ifndef RAYTHEATER_H
 #define RAYTHEATER_H
 
+#include "./internal/macros.h"
+#include "./internal/types.h"
+
 #include "./internal/ActorAttributes.h"
 #include "./internal/Builder.hpp"
 #include "./internal/Play.h"
 #include "./internal/Stage.hpp"
-#include "./internal/macros.h"
-#include "./internal/types.h"
+#include "./internal/Timer.hpp"
 
 // #include "./internal/RayTheaterBuilder.hpp"
 // #include "./internal/RayTheaterPlay.hpp"
