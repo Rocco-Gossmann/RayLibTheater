@@ -30,8 +30,11 @@ public:
   void OnLoad(Theater::Stage *s) override {
     m_debugActor.m_label = "Hello";
     m_debugActor.m_id = s->AddActor(&m_debugActor);
+    s->AddActorAttribute(m_debugActor.m_id, Theater::NPC);
+
     m_debugActor1.m_label = "World";
     m_debugActor1.m_id = s->AddActor(&m_debugActor1);
+    s->AddActorAttribute(m_debugActor1.m_id, Theater::NPC);
   };
 
   void OnTick(Theater::Stage *s, Theater::Play p) override {
@@ -41,21 +44,29 @@ public:
 
     switch (si) {
     case 2:
-      for (auto a : lst)
+      for (auto a : lst) {
         DebugLog("Found: " << ((DebugActor *)a)->m_label);
+        if (a->HasAttribute(Theater::NPC))
+          DebugLog("is NPC");
+      }
 
       s->RemoveActor(m_debugActor.m_id);
       break;
 
     case 1:
-      for (auto a : lst) {
-        DebugLog("Left with: " << ((DebugActor *)a)->m_label);
-        break;
-      }
-      s->RemoveActor(m_debugActor1.m_id);
+      for (auto a : lst)
+        if (a->HasAttribute(Theater::NPC)) {
+          DebugLog("Left with NPC DebugActor: " << ((DebugActor *)a)->m_label
+                                                << " => removing NPC Tag");
+          s->RemoveActorAttribute(((DebugActor *)a)->m_id, Theater::NPC);
+        } else {
+          DebugLog("Last Debug Actor has no NPC Tag => Remove from Stage");
+          s->RemoveActor(m_debugActor1.m_id);
+        }
       break;
 
     case 0:
+      DebugLog("No actors on stage => End Programm");
       s->EndPlay();
       break;
     default:
@@ -76,7 +87,6 @@ private:
 //==============================================================================
 // BM: Main
 //==============================================================================
-
 int main() {
   MyScene s;
   DebugLog("--- Actor - Attributes - Test ------------------------------ ");

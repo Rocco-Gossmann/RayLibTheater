@@ -1,8 +1,10 @@
 #ifndef RAYTHEATER_STAGE_H
 #define RAYTHEATER_STAGE_H
 
+#include "internal/ActorAttributes.h"
 #include "raylib.h"
 #include <cassert>
+#include <type_traits>
 
 #include "./macros.h"
 #include "./types.h"
@@ -49,6 +51,8 @@ public:
   template <typename A> ActorRessource AddActor(A *actor, byte zIndex = 0);
   void RemoveActor(ActorRessource);
 
+  void AddActorAttribute(ActorRessource, ATTRIBUTES);
+  void RemoveActorAttribute(ActorRessource, ATTRIBUTES);
   std::unordered_set<Actor *> getActorsWithAttribute(ATTRIBUTES);
 
 private:
@@ -105,7 +109,6 @@ template <typename T> inline const void Stage::ChangeScene(T *s) {
 }
 
 inline const void Stage::EndPlay() {
-  DebugLog("[Stage::EndPlay] invoced " << m_nextStageState);
   m_nextStageState = nullptr;
   m_stageStateSet = true;
 }
@@ -132,28 +135,45 @@ inline void Stage::RemoveActor(ActorRessource a) {
   }
 }
 
+void Stage::AddActorAttribute(ActorRessource r, ATTRIBUTES a) {
+  const auto act = m_actors.getActorByRessource(r);
+  assert(act != nullptr && "Actor was not added to Stage");
+
+  auto it = m_attributeLists.find(a);
+  if (it != m_attributeLists.end()) {
+    if (it->second.find(r) == it->second.end()) {
+      it->second.insert(r);
+      act->m_stageAttributes.insert(a);
+    }
+  }
+}
+
+void Stage::RemoveActorAttribute(ActorRessource r, ATTRIBUTES a) {
+  const auto act = m_actors.getActorByRessource(r);
+  assert(act != nullptr && "Actor was not added to Stage");
+
+  auto it = m_attributeLists.find(a);
+  if (it != m_attributeLists.end()) {
+    it->second.erase(r);
+    act->m_stageAttributes.erase(a);
+  }
+}
+
 inline bool Stage::swapStageStates() {
   if (m_stageStateSet) {
-    DebugLog("[Stage::swapStageStages] invoced " << m_nextStageState);
 
     const auto osp = m_stageProcess;
     m_stageProcess = SWAPSCENE;
 
-    if (m_currentStageState != nullptr) {
-      DebugLog("[Stage::swapStageStages] current scene unload "
-               << m_currentStageState);
+    if (m_currentStageState != nullptr)
       m_currentStageState->OnUnload(this);
-    }
 
     m_currentStageState = m_nextStageState;
     m_nextStageState = nullptr;
     m_stageStateSet = false;
 
-    if (m_currentStageState != nullptr) {
-      DebugLog("[Stage::swapStageStages] next scene load "
-               << m_currentStageState);
+    if (m_currentStageState != nullptr)
       m_currentStageState->OnLoad(this);
-    }
 
     m_stageProcess = osp;
 
@@ -164,7 +184,6 @@ inline bool Stage::swapStageStates() {
 }
 
 inline void Stage::shutdown() {
-  DebugLog("[Stage::shutdown] invoked");
 
   EndPlay();
   swapStageStates();
@@ -199,7 +218,6 @@ inline void Stage::onResize() {
 }
 
 inline void Stage::updatePlay() {
-  DebugLog("[Stage::updatePlay] invoked");
   // Put DeltaTime - Multiplyer into context
   m_play.deltaTime = GetFrameTime();
 
@@ -255,8 +273,6 @@ inline void Stage::play() {
 
   while (m_currentStageState != nullptr && !WindowShouldClose()) {
 
-    DebugLog("[Stage::play] Tick");
-
     // switch to a new scene if needed.
     if (swapStageStates())
       continue;
@@ -269,21 +285,16 @@ inline void Stage::play() {
     updatePlay();
 
     // Tick the stage
-    DebugLog("[Stage::play] call Scene->OnTick ");
     m_currentStageState->OnTick(this, m_play);
 
     // Tick the actors
-    DebugLog("[Stage::play] call Actors->OnTick ");
     m_actors.OnTick(this, m_play);
 
     // Draw the Stage
     BeginTextureMode(m_stagetexture);
     ClearBackground(m_backgroundColor);
-    DebugLog("[Stage::play] call Scene->OnSceneDrawBG ");
     m_currentStageState->OnSceneDrawBG();
-    DebugLog("[Stage::play] call Actors->OnStageDraw ");
     m_actors.OnStageDraw();
-    DebugLog("[Stage::play] call Scene->OnSceneDrawFG ");
     m_currentStageState->OnSceneDrawFG();
     EndTextureMode();
 
@@ -292,7 +303,6 @@ inline void Stage::play() {
     ClearBackground(m_borderColor);
     DrawTexturePro(m_stagetexture.texture, m_stagerect, m_viewportrect, {0, 0},
                    0, WHITE);
-    DebugLog("[Stage::play] call Scene->OnWindowDraw ");
     m_currentStageState->OnWindowDraw();
     EndDrawing();
   }

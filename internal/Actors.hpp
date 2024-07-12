@@ -1,6 +1,7 @@
 #ifndef RAYTHEATER_ACTORS_H
 #define RAYTHEATER_ACTORS_H
 
+#include "internal/ActorAttributes.h"
 #ifndef RT_MAX_STAGE_ACTOR_COUNT
 #define RT_MAX_STAGE_ACTOR_COUNT 0
 #endif
@@ -18,6 +19,8 @@ namespace Theater {
 class Actors;
 
 class Actor {
+  friend class Stage;
+
 public:
   virtual void OnEnter(Stage *) {}
   virtual void OnTick(Stage *, Play) {}
@@ -26,6 +29,15 @@ public:
   virtual void OnLeave(Stage *) {}
 
   virtual AttributeList GetAttributes();
+
+  bool HasAttribute(ATTRIBUTES a) {
+    const auto lst = GetAttributes();
+    return lst.find(a) != lst.end() ||
+           m_stageAttributes.find(a) != m_stageAttributes.end();
+  }
+
+private:
+  AttributeList m_stageAttributes;
 };
 
 class Actors {
