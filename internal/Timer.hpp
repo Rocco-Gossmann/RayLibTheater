@@ -2,11 +2,12 @@
 #define RAYTHEATER_TIMER_H
 
 #include "./internal/Play.h"
+#include "internal/types.h"
 #include <functional>
 
 namespace Theater {
 
-// BM: Class
+// BM: Timer - Class
 //==============================================================================
 class Timer {
 public:
@@ -71,14 +72,15 @@ private:
 private:
   friend class Stage;
   bool stageUpdate(Play p);
+  TimerRessource m_timerID;
 };
 
-// BM: Implementation
+// BM: Timer - Implementation
 //==============================================================================
 inline Timer::Timer()
     : m_TimerGoal(0), m_TimerValue(0), m_ActiveTimerGoal(0),
       m_ResetRequested(false), m_OnFinish([](Timer *t) {}), m_loop(false),
-      m_OnProgress([](Timer *o, float t, float g) {}) {}
+      m_OnProgress([](Timer *o, float t, float g) {}), m_timerID(0) {}
 
 inline Timer *Timer::loop() {
   m_loop = true;

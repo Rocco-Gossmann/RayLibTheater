@@ -6,6 +6,7 @@
 #include "raylib.h"
 #include <cassert>
 #include <type_traits>
+#include <vector>
 
 #include "./macros.h"
 #include "./types.h"
@@ -57,6 +58,7 @@ public:
   std::unordered_set<Actor *> getActorsWithAttribute(ATTRIBUTES);
 
   void StartTimer(Timer *);
+  void EndTimer(Timer *);
 
 private:
   StageProcess m_stageProcess;
@@ -68,6 +70,9 @@ private:
   Color m_borderColor;
   Color m_backgroundColor;
   float m_scale;
+
+  TimerRessource m_timer_autoIncrement;
+  TimerList m_timers;
 
   Actors m_actors;
 
@@ -95,7 +100,7 @@ inline Stage::Stage()
     : m_currentStageState(nullptr), m_nextStageState(nullptr),
       m_stageProcess(PAUSED), m_actors(), m_viewportrect({0, 0, 256, 192}),
       m_integerScale(false), m_stagerect({0, 0, 256, 192}), m_stagetexture(),
-      m_play(), m_attributeLists({}) {
+      m_play(), m_attributeLists({}), m_timer_autoIncrement(1) {
   m_actors.m_play = &m_play;
 
 #define ACTOR_ATTRIBUTE(attr)                                                  \
@@ -267,12 +272,38 @@ inline std::unordered_set<Actor *> Stage::getActorsWithAttribute(ATTRIBUTES a) {
   return ret;
 }
 
+// BM: Timer - Implementation
+//==============================================================================
+
+inline void Stage::StartTimer(Timer *t) {
+  assert(t != nullptr && "given timer can't be null");
+  assert(t->m_timerID == 0 &&
+         "can't start a timer, that was already started. Remove the timer with "
+         "Stage::EndTimer first, to start it again");
+
+  auto id = m_timer_autoIncrement;
+  m_timer_autoIncrement++;
+  t->m_timerID = id;
+
+  m_timers.insert({id, t});
+}
+
+inline void Stage::EndTimer(Timer *t) {
+  assert(t != nullptr && "given timer can't be null");
+  assert(t->m_timerID != 0 && "Timer as not started, so it can't be ended");
+
+  m_timers.erase(t->m_timerID);
+  t->m_timerID = 0;
+}
+
 // BM: Implementation - Play
 //==============================================================================
 
 inline void Stage::play() {
 
   swapStageStates();
+
+  auto _cleanupTimers = std::vector<Timer *>();
 
   while (m_currentStageState != nullptr && !WindowShouldClose()) {
 
@@ -284,8 +315,18 @@ inline void Stage::play() {
     if (IsWindowResized())
       onResize();
 
-    // TODO: Update Play
+    // Update Play
     updatePlay();
+
+    // Update Timers
+    for (auto t : m_timers)
+      if (!t.second->stageUpdate(m_play))
+        _cleanupTimers.push_back(t.second);
+
+    for (auto ct : _cleanupTimers)
+      EndTimer(ct);
+
+    _cleanupTimers.clear();
 
     // Tick the stage
     m_currentStageState->OnTick(this, m_play);
