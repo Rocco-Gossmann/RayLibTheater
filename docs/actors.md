@@ -19,74 +19,33 @@ public:
 private:
   // Optional Event-Handlers, that allow the actor to load and unload
   // further ressources, when it is added to the Stage.
-  void OnStageEnter(Play p) override {}
-  void OnStageLeave(Play p) override {}
+  void OnEnter(Stage *) override {}
+  void OnLeave(Stage *) override {}
 
 };
 ```
 
-# Adding Components
-
-To add Components, RayTheater makes use of C++ ability to use Multiple Inheritance.
-Each component must be given the `this` in the Constructor.
-
-So to allow the Above Actor to become visible on the Stage, we can add the `Theater::Visible` component.
+# Ticks / Updates
+By overriding the `OnTick` Method, the Actor can be updated each frame/cycle.
 
 ```c++
-#include "RayTheater.h"
-#include <ralib.h>
-
-using namespace Theater;
-
-class Mouse : public Actor, public Visible {
-
-public:
-  // Constructor
-  Mouse() : Actor(), Visible(this) {}
-  // ...
-};
+  void OnTick(Stage * stage, Play play) override {}
 ```
 
-From there, the Actors gains and exposes a new Method, for others or itself to use.
+# Visibility
+To define how an Actor is rendered, you can overrid the Methods:
 
 ```c++
-#include "RayTheater.h"
-#include <ralib.h>
-
-using namespace Theater;
-
-class Mouse : public Actor, public Visible {
-
-public:
-  // ...
-  /**
-   * @brief Sets what elements are drawn above which other
-   * actors with higher numbers will be drawn above actors with lower numbers
-   * Should 2 elements have the same number, there draw order
-   * depends on the order, in which they were made visible
-   *
-   * @param layer
-   */
-  void SetRenderLayer(int layer);
-  // ...
-};
+...
+  void OnStageDraw() override {}
+  void OnWindowDraw() override {}
+...
 ```
 
-It also receives a new Event-Handler, that gets triggered, when ever the Stage is Drawn.
+However, an Actors visibility is defined by where it is positioned on the Stage.
+The Stage consists of 256 layers. (0 - 255) the higher the number, the further in the back the Actor will be.
+All Actors on layer 0 are not rendered though. (Consider it the area behind the curtain.)
 
-```c++
-#include "RayTheater.h"
-#include <ralib.h>
-
-using namespace Theater;
-
-class Mouse : public Actor, public Visible {
-
-private:
-  // ...
-  void OnDraw(Play p) override {};
-};
-```
 
 # Loading and Unloading of Ressources
 
@@ -99,13 +58,14 @@ needs to construct the Stage first.
 This is where the Actors
 
 ```c++
-  virtual void OnStageEnter(Play);
-  virtual void OnStageLeave(Play);
+  virtual void OnEnter(Stage *);
+  virtual void OnLeave(Stage *);
 ```
 
 methods come into play.
 
-Lets update the Actor above to load a cursor Graphic and render it,
+# A full Example for an Actor
+Let's complete the Actor from the example code above.
 
 ```c++
 #include "RayTheater.h"
@@ -113,40 +73,97 @@ Lets update the Actor above to load a cursor Graphic and render it,
 
 using namespace Theater;
 
-class Mouse : public Actor, public Visible {
+class Mouse : public Actor {
 
 public:
-  Mouse() : Actor(), Visible(this) {}
+  Mouse() : Actor() {}
 
 private:
 
   // defining a space for the loaded image to live in Memory
-  Texture2D gfx; //Texture2D is provided by RayLib
+  Texture2D m_gfx; //Texture2D is provided by RayLib
+
+  // lets also define some coordinates, that the cursor is rendered at
+  float m_posx, m_posy;
 
   // Loading the image as soon, as the Actor is added to the Stage.
-  void OnStageEnter(Play p) override {
-    gfx = LoadTexture("./assets/cursor.png"); // RayLib function
-
-    // Tell the Stage, that the Actor is ready to be rendered
-    p.stage->MakeActorVisible(this);
-
+  void OnEnter(Stage * stage) override {
+    m_gfx = LoadTexture("./assets/cursor.png"); // RayLib function
   }
 
   // Once the Actor is removed from the Stage, we can free the Ressource
-  void OnStageLeave(Play p) override {
-    UnloadTexture(gfx); // RayLib function
+  void OnLeave(Stage *s) override {
+    UnloadTexture(m_gfx); // RayLib function
   }
 
-  // Then we can implement the Theater::Visible Interfaces  Hook to draw the cursor
-  void OnDraw(Play p) override {
-    // If the Cursor is inside the Stage
-    if (p.mouseX > 0 && p.mouseY > 0 && p.mouseX < p.stageWidth &&
-        p.mouseY < p.stageHeight) {
-
-      DrawTexture(gfx, p.mouseX, p.mouseY, WHITE); // RayLib function
-
+  // We need to update the  coordinates. 
+  // Only during the Tick phase, will you get access 
+  // to the Stage and the current Play (aka. the Stages state)
+  void OnTick(Stage * stage, Play play) override {
+ 
+    // Make sure cursor is still on the stage, when rendering it
+    if(play.mouseX > 0 
+      && play.mouseY > 0 
+      && play.mouseX < play.stageWidth 
+      && play.mouseY < play.stageHeight
+    ) {
+      m_posx = play.mouseX;      
+      m_posy = play.mouseY;
     }
 
   }
+
+  // Then we can draw the cursor
+  void OnStageDraw() override {
+      DrawTexture(m_gfx, m_posx, m_posy, WHITE); // RayLib function
+  }
 };
 ```
+
+# Adding the Actor to the Stage
+
+An Actor is not processed in an way, until it enters the Stage.
+
+For it to enter though, the Actor should be part of a [Theater::Scene](./scenes.md):
+
+
+```c++
+
+#include "RayTheater.h"
+#include <ralib.h>
+
+using namespace Theater;
+
+class Mouse /*...*/;
+// ...
+
+
+class MyScene : public Stage::Scene {
+public:
+  void OnLoad(Stage *s) override { 
+    // Adding the Actor to the stage, as soon as it is loaded
+    // m_mouseID is the registration for this actor
+    // we need it to be able to remove the actor later 
+    m_mouseID = s->AddActor(&m_mouse, /* layer: */ 1); //<- adding mouse on layer 1 means, 
+                                          // it will always be rendereed above
+                                          // everything else
+  };
+
+  void OnUnload(Stage *s) override {
+    // Once the Scene is finished, we can unload the actor, by removing it's 
+    // Registration
+    s->RemoveActor(m_mouseID);
+  }
+
+private:
+  // Holds the Actor itself
+  Mouse m_mouse;
+
+  // Upon adding the actor to the stage, A registration/ressource is created 
+  // We need to keep track of it as well, so we can remove the actor from the stage 
+  // later
+  ActorRessource m_mouseID;
+
+}
+```
+
