@@ -1,10 +1,11 @@
 #ifndef RAYTHEATER_TYPES_H
 #define RAYTHEATER_TYPES_H
 
-#include "./internal/ActorAttributes.h"
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
+
+#include "./ActorAttributes.h"
 
 namespace Theater {
 

@@ -1,7 +1,11 @@
 #ifndef RAYTHEATER_ACTORS_H
 #define RAYTHEATER_ACTORS_H
 
-#include "internal/ActorAttributes.h"
+#include <cassert>
+#include <unordered_set>
+#include <vector>
+
+#include "./ActorAttributes.h"
 #ifndef RT_MAX_STAGE_ACTOR_COUNT
 #define RT_MAX_STAGE_ACTOR_COUNT 0
 #endif
@@ -10,9 +14,6 @@
 #include "./RenderList.hpp"
 #include "./macros.h"
 #include "./types.h"
-#include <cassert>
-#include <unordered_set>
-#include <vector>
 
 namespace Theater {
 

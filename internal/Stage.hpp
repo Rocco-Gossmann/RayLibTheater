@@ -1,8 +1,8 @@
 #ifndef RAYTHEATER_STAGE_H
 #define RAYTHEATER_STAGE_H
 
-#include "internal/ActorAttributes.h"
-#include "internal/Timer.hpp"
+#include "./ActorAttributes.h"
+#include "./Timer.hpp"
 #include "raylib.h"
 #include <cassert>
 #include <type_traits>
@@ -30,12 +30,12 @@ public:
   //==============================================================================
   class Scene {
   public:
-    virtual void OnLoad(Stage *s){};
-    virtual void OnTick(Stage *s, Play p){};
-    virtual void OnSceneDrawBG(){};
-    virtual void OnSceneDrawFG(){};
-    virtual void OnWindowDraw(){};
-    virtual void OnUnload(Stage *s){};
+    virtual void OnLoad(Stage *s) {};
+    virtual void OnTick(Stage *s, Play p) {};
+    virtual void OnSceneDrawBG() {};
+    virtual void OnSceneDrawFG() {};
+    virtual void OnWindowDraw() {};
+    virtual void OnUnload(Stage *s) {};
   };
 
   Stage();
@@ -105,7 +105,7 @@ inline Stage::Stage()
 
 #define ACTOR_ATTRIBUTE(attr)                                                  \
   m_attributeLists.insert({attr, ActorRessourceList{}});
-#include "./internal/AttributeSet.h"
+#include "./AttributeSet.h"
 #undef ACTOR_ATTRIBUTE
 }
 

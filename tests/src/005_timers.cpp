@@ -1,4 +1,3 @@
-#include "internal/macros.h"
 #ifdef TESTS
 #define RT_MAX_STAGE_ACTOR_COUNT 2
 

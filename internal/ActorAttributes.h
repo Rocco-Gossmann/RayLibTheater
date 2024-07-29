@@ -6,7 +6,7 @@ namespace Theater {
 enum ATTRIBUTES {
 
 #define ACTOR_ATTRIBUTE(attr) attr,
-#include "./internal/AttributeSet.h"
+#include "./AttributeSet.h"
 #undef ACTOR_ATTRIBUTE
 
   __ATTRIBUTE_COUNT

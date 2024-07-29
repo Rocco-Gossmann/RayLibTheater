@@ -1,9 +1,10 @@
 #ifndef RAYTHEATER_TIMER_H
 #define RAYTHEATER_TIMER_H
 
-#include "./internal/Play.h"
-#include "internal/types.h"
 #include <functional>
+
+#include "./Play.h"
+#include "./types.h"
 
 namespace Theater {
 

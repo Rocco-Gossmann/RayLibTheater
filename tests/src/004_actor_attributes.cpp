@@ -5,7 +5,7 @@
 #include <string>
 #include <unordered_set>
 
-#include "RayTheater.hpp"
+#include <RayTheater.hpp>
 
 using namespace Theater;
 
