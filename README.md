@@ -36,10 +36,10 @@ By doing it this way, only the Parts of RayTheater, that you actually use, will 
 
 # Compiler Flags
 
-All you need is at least C++11 and the IncludePath to your RayTheater.hpp.
+All you need is at least C++14 and the IncludePath to your RayTheater.hpp.
 Since this is using RayLib, you obviously also need ot add flags to that lib and headers as well.
 ```
--std=c++11 -I/Path/To/RayLibTheater -L/Path/To/RayLib/Lib -I/PathToRayLib/Headers -lraylib
+-std=c++14 -I/Path/To/RayLibTheater -L/Path/To/RayLib/Lib -I/PathToRayLib/Headers -lraylib
 ```
 
 # How to use it in Code.
@@ -155,12 +155,6 @@ int main() {
       - [Theater::Colliders](./docs/components.md#collider---components)  
         Components, that describe an Actors shape for the Collision check.
 
-      - [Theater::Visible](./docs/components.md#visible---component)  
-        Allows an Actor to visually show up on the stage.
-
-      - [Theater::Ticking](./docs/components.md#ticking---component)  
-        Allows an Actor to interact with the stage, even when not visible.
-        
       - [Theater::Transform2D](./docs/components.md#transform2d---component)  
         [!todo]
         Allows other Actors or the Scene to manipulate the actors positioning on the stage.

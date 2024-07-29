@@ -1,4 +1,4 @@
-CC := c++ -std=c++11
+CC := c++ -std=c++14
 
 DIRSRC:=./src
 DIRBUILD:=./build
